@@ -2,7 +2,7 @@
 // A0  <- analog front end (LM358 U1 via RC low-pass, centred at ~2.5 V)
 // D9  -> R1k -> Q1 BC548 base (switches the IR LED)
 // LED_BUILTIN (D13) = heartbeat indicator, no external parts
-// OLED 0.96" SSD1306 128x64 I2C @0x3C: SDA=D2, SCL=D3 (Leonardo), VCC=5V, GND
+// OLED 0.96" SSD1306 128x64 I2C @0x3C: SDA=A4, SCL=A5 (UNO) / D2, D3 (Leonardo), VCC=5V, GND
 // Serial 115200: "BPM,<value>" per beat; send 'p' to toggle raw plot mode.
 
 #include <Wire.h>
