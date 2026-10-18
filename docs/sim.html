@@ -77,9 +77,13 @@ td.v{font-family:var(--f-mono);font-weight:500;white-space:nowrap}
 .tw{overflow-x:auto}
 .foot{color:var(--muted);font-size:12.5px;margin-top:14px}
 @media(prefers-reduced-motion:reduce){.heart{animation:none}button{transition:none}}
+.tabs{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-family:'Sarabun',system-ui,sans-serif;font-size:13.5px;margin:0 0 12px;padding:8px 12px;border:2px solid var(--line);border-radius:16px;background:var(--card)}
+.tabs .grp{font-weight:700;color:var(--muted);margin-left:6px}.tabs .grp:first-child{margin-left:0}
+.tabs a{color:var(--fg);text-decoration:none;padding:3px 11px;border-radius:99px;border:2px solid transparent}
+.tabs a:hover{border-color:var(--pink)}.tabs a.on{background:var(--pink);color:#fff;font-weight:700}
 </style>
 
-<div class="wrap">
+<div class="wrap"><nav class="tabs" aria-label="เลือกแบบวงจร"><span class="grp">แบบหลัก</span><a href="sim.html" class="on" aria-current="page">จำลอง</a><a href="builder.html">ต่อวงจร</a><a href="view3d.html">3 มิติ</a><span class="grp">แบบง่าย (สำรอง)</span><a href="backup.html">คู่มือ+โปรแกรม</a><a href="builder_simple.html">ต่อวงจร</a><a href="view3d_simple.html">3 มิติ</a></nav>
   <header>
     <svg class="heart" id="heart" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 56C10 40 4 28 4 19 4 11 10 6 17 6c6 0 11 3 15 9 4-6 9-9 15-9 7 0 13 5 13 13 0 9-6 21-28 37z" fill="#ff5d8f"/><circle cx="21" cy="19" r="4" fill="#fff" opacity=".55"/></svg>
     <div>

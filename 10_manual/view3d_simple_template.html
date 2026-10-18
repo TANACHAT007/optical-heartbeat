@@ -1,0 +1,259 @@
+<title>วงจรชีพจร 3 มิติ (แบบง่าย)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&family=Sarabun:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* layout: toolbar, big orbitable 3D canvas, part legend. Candy palette on soft white / deep plum */
+:root{
+  --bg:#fff8fb; --card:#ffffff; --fg:#2a1f3d; --muted:#7a6f8f; --line:#f0e3ee;
+  --pink:#ff5d8f; --teal:#18b8a6; --sun:#ffb81c; --sky:#4aa3ff; --grape:#8b5cf6;
+  --shadow:0 6px 0 rgba(139,92,246,.10);
+  --f-display:'Mali','Sarabun',sans-serif; --f-body:'Sarabun',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#171126; --card:#221a36; --fg:#f6eefc; --muted:#a99cc4; --line:#352a52; --shadow:0 6px 0 rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171126; --card:#221a36; --fg:#f6eefc; --muted:#a99cc4; --line:#352a52; --shadow:0 6px 0 rgba(0,0,0,.35); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-block:18px 36px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+h1{font-family:var(--f-display);font-size:clamp(24px,4vw,32px);margin:0;line-height:1.15}
+.sub{color:var(--muted);margin:2px 0 0;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-family:var(--f-display);font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--fg);
+  border-radius:999px;padding:7px 15px;cursor:pointer;transition:transform .12s;font-size:14px}
+button:hover{transform:translateY(-2px) rotate(-1deg)}
+button:active{transform:translateY(1px) scale(.97)}
+button:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+button.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.stage{position:relative;border:2px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:var(--shadow);background:var(--card)}
+canvas{display:block;width:100%;height:min(66vh,640px);touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);padding:5px 12px;border-radius:999px;font-size:13px;white-space:nowrap;opacity:0;transform:translate(-50%,-140%);transition:opacity .12s}
+.tip.show{opacity:1}
+.help{position:absolute;left:12px;bottom:10px;font-size:12.5px;color:var(--muted);background:color-mix(in srgb,var(--card) 82%,transparent);padding:3px 10px;border-radius:999px}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px 16px;font-size:13.5px}
+.legend span{display:flex;gap:8px;align-items:center}
+.legend i{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid var(--line)}
+.foot{color:var(--muted);font-size:12.5px}
+.ptab th,.ptab td{text-align:left;padding:5px 8px;border-bottom:1px dashed var(--line)}.ptab th{font-family:var(--f-display);font-size:12.5px;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>วงจรชีพจร 3 มิติ — แบบง่าย</h1>
+    <p class="sub">วงจรสำรองแบบง่าย (ตัวรับ → บัฟเฟอร์ LM358 → A0) บน breadboard ลากเมาส์หมุน เลื่อนล้อซูม ชี้ที่ชิ้นส่วนเพื่อดูชื่อ</p>
+  </div>
+  <div class="row">
+    <button id="vIso" type="button" class="on">มุมเฉียง</button>
+    <button id="vTop" type="button">มุมบน</button>
+    <button id="vFront" type="button">มุมหน้า</button>
+    <button id="vSens" type="button">โซนเซนเซอร์</button>
+    <button id="vSpin" type="button">หมุนเอง: ปิด</button>
+  </div>
+  <div class="stage"><canvas id="c" aria-label="โมเดล 3 มิติของวงจรบน breadboard"></canvas><div class="tip" id="tip"></div><div class="help">ลาก = หมุน · ล้อ/บีบนิ้ว = ซูม · ลากขวา = เลื่อน</div></div>
+  <div class="legend" id="legend"></div>
+  <div class="stage" style="padding:12px 16px;overflow-x:auto"><h2 style="font-family:var(--f-display);font-size:16px;margin:0 0 8px">รายการอุปกรณ์และรหัส (ตรงกับใบยืม)</h2><table class="ptab" id="ptab" style="width:100%;border-collapse:collapse;font-size:13.5px"></table></div>
+  <p class="foot">โมเดลแสดงตำแหน่งเสียบตามแบบเฉลย ขนาดชิ้นส่วนเป็นแบบประมาณ ไม่ใช่ตัวจริง (เช่น ตัว VR ที่ขาห่างกัน 2 รู และ breadboard เป็นแถบไฟไม่ขาดกลางบอร์ด)</p>
+</div>
+
+<script>
+var D = /*DATA*/;
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var T=THREE, cv=$('c');
+  var ROWY={T5V:20,TVREF:44,a:92,b:116,c:140,d:164,e:188,f:236,g:260,h:284,i:308,j:332,BGND:380,BX:404};
+  var K=2.54/24, XC=26.5*2.54, ZC=212*K;
+  function P(c,r,y){return new T.Vector3((c-1)*2.54-XC+(c>26?0:0), y||0, ROWY[r]*K-ZC)}
+  var renderer=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:false});
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+  var scene=new T.Scene();
+  function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+  function bgcol(){var c=css('--card')||'#fff';renderer.setClearColor(new T.Color(c));scene.fog=null}
+  var cam=new T.PerspectiveCamera(38,1,1,2000);
+  scene.add(new T.HemisphereLight(0xffffff,0x998fb0,0.85));
+  var sun=new T.DirectionalLight(0xffffff,0.9);sun.position.set(60,120,90);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  var sc=sun.shadow.camera;sc.left=-120;sc.right=120;sc.top=90;sc.bottom=-90;sc.near=10;sc.far=400;scene.add(sun);
+  function M(col,o){o=o||{};return new T.MeshStandardMaterial(Object.assign({color:col,roughness:.55,metalness:.05},o))}
+  var all=new T.Group();scene.add(all);
+  function tag(o,label){o.traverse(function(x){x.userData.label=label;if(x.isMesh){x.castShadow=true;x.receiveShadow=true}});return o}
+  function tube(pts,rad,col,label){var cu=new T.CatmullRomCurve3(pts,false,'catmullrom',0.15);var m=new T.Mesh(new T.TubeGeometry(cu,Math.max(8,pts.length*14),rad,8,false),M(col,{roughness:.4}));return tag(m,label)}
+  function cylBetween(a,b,rad,col,label){var d=b.clone().sub(a),len=d.length();var m=new T.Mesh(new T.CylinderGeometry(rad,rad,len,16),M(col));m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());return tag(m,label)}
+
+  // ---- breadboard
+  var bw=(52+2)*2.54, bd=(404-20)*K+7, boardTop=0;
+  var board=new T.Mesh(new T.BoxGeometry(bw,8,bd),M(0xf5f1e3,{roughness:.8}));board.position.set(0,-4,(20+404)/2*K-ZC);board.receiveShadow=true;all.add(tag(board,'breadboard (เบรดบอร์ด)'));
+  var gap=new T.Mesh(new T.BoxGeometry(bw-3,.15,2.6),M(0xcfc7ac));gap.position.set(0,.08,212*K-ZC);all.add(gap);
+  [[ 'T5V',0xd62c2c],['TVREF',0x1ea03c],['BGND',0x2c5fd6],['BX',0xaaaaaa]].forEach(function(r){var l=new T.Mesh(new T.BoxGeometry(bw-8,.12,.35),M(r[1]));l.position.set(0,.08,ROWY[r[0]]*K-ZC+ (r[0]==='T5V'||r[0]==='TVREF'?1.35:1.35));all.add(l)});
+  var rowsAll=Object.keys(ROWY),hole=new T.InstancedMesh(new T.BoxGeometry(.95,.5,.95),M(0x3b3b46,{roughness:.9}),52*rowsAll.length),mx=new T.Matrix4(),n=0;
+  for(var c=1;c<=52;c++)rowsAll.forEach(function(r){var p=P(c,r,.05);mx.setPosition(p);hole.setMatrixAt(n++,mx)});all.add(hole);
+  // ---- helpers for parts
+  var BANDC=[0x111111,0x7a4b1b,0xdd1111,0xf08000,0xe8d000,0x2a9a2a,0x2a5fd0,0x8a3fb0,0x888888,0xeeeeee];
+  function valOf(label){var m=label.match(/R([\d.]+)(k?)/);return m?parseFloat(m[1])*(m[2]?1e3:1):null}
+  function leadTo(h,top,col){return tube([h,new T.Vector3(h.x,top*.6,h.z),new T.Vector3(h.x,top,h.z)],.28,col||0xb9b9b9,'ขาชิ้นส่วน')}
+  function twoLeg(p,build,h){var a=P(p.pins[0][0],p.pins[0][1]),b=P(p.pins[1][0],p.pins[1][1]);
+    var mid=a.clone().add(b).multiplyScalar(.5);mid.y=h;var g=new T.Group();
+    var d=b.clone().sub(a);d.y=0;var len=d.length();var ang=Math.atan2(d.x,d.z);
+    var body=build(len);body.position.copy(mid);body.rotation.y=ang-Math.PI/2*0;g.add(body);
+    var u=d.clone().normalize(),half=body.userData.half||3;
+    [[a,-1],[b,1]].forEach(function(e,i){var end=mid.clone().add(u.clone().multiplyScalar((i?1:-1)*half));
+      g.add(tube([e[0],new T.Vector3(e[0].x,h*.55,e[0].z),new T.Vector3(end.x,h,end.z)],.28,0xc4c4cc,p.label));});
+    return {g:g,a:a,b:b,mid:mid,ang:ang,u:u}}
+  function align(obj,u){obj.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),u.clone().normalize())}
+  function hint(name){return name}
+  D.parts.forEach(function(p){
+    var lab=p.label+(p.code?' · '+p.code:''),k=p.kind,g;
+    if(k==='res'){
+      var v=valOf(lab);
+      var r=twoLeg(p,function(len){var L=Math.min(6.4,len*.78),grp=new T.Group();
+        var body=new T.Mesh(new T.CylinderGeometry(1.15,1.15,L,20),M(0xe3c79a));grp.add(body);
+        if(v){var e=Math.floor(Math.log10(v))-1,dd=Math.round(v/Math.pow(10,e)),cols=[BANDC[Math.floor(dd/10)],BANDC[dd%10],(e>=0&&e<=9?BANDC[e]:0xc9a227),0xc9a227];
+          cols.forEach(function(cc,i){var ring=new T.Mesh(new T.CylinderGeometry(1.2,1.2,.45,20),M(cc));ring.position.y=-L/2+1.1+i*.95+(i===3?.5:0);grp.add(ring)})}
+        grp.userData.half=L/2+0.2;return grp},3.3);
+      r.g.children[0].rotation.set(0,0,0);
+      var bodyG=r.g.children[0];bodyG.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),r.u);
+      all.add(tag(r.g,lab)); return}
+    if(k==='cap'){
+      var a=P(p.pins[0][0],p.pins[0][1]),b=P(p.pins[1][0],p.pins[1][1]),mid=a.clone().add(b).multiplyScalar(.5);mid.y=5.2;
+      var disc=new T.Mesh(new T.SphereGeometry(2.3,24,16),M(0xcc7a2e,{roughness:.4}));disc.scale.set(1,1.15,.45);disc.position.copy(mid);
+      var gg=new T.Group();gg.add(disc);
+      [a,b].forEach(function(e,i){gg.add(tube([e,new T.Vector3(e.x,2.2,e.z),new T.Vector3(mid.x+(i?.9:-.9),4,mid.z)],.28,0xc4c4cc,lab))});
+      all.add(tag(gg,lab));return}
+    if(k==='ele'){
+      var r2=twoLeg(p,function(len){var L=Math.min(6,len*.7),grp=new T.Group();
+        var body=new T.Mesh(new T.CylinderGeometry(2.4,2.4,L,28),M(0x222c48,{roughness:.35}));grp.add(body);
+        var stripe=new T.Mesh(new T.CylinderGeometry(2.45,2.45,L*.22,28),M(0xeeeeee));stripe.position.y=L/2-L*.14;grp.add(stripe);
+        grp.userData.half=L/2+.1;return grp},3.6);
+      var bg=r2.g.children[0];bg.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),r2.u.clone().negate());   // stripe (-) toward pin 2 side
+      all.add(tag(r2.g,lab));return}
+    if(k==='ic'){
+      var xs=p.pins.map(function(q){return (q[0]-1)*2.54-XC}),x0=Math.min.apply(0,xs),x1=Math.max.apply(0,xs);
+      var body2=new T.Mesh(new T.BoxGeometry(x1-x0+2,3.3,6.6),M(0x1b1b1b,{roughness:.45}));body2.position.set((x0+x1)/2,2.1,212*K-ZC);
+      var gI=new T.Group();gI.add(body2);
+      var notch=new T.Mesh(new T.CylinderGeometry(.8,.8,.2,16),M(0x555555));notch.position.set(x0-.4,3.8,212*K-ZC);gI.add(notch);
+      p.pins.forEach(function(q){var h=P(q[0],q[1]);var leg=new T.Mesh(new T.BoxGeometry(.5,1.8,.4),M(0xc8c8c8));leg.position.set(h.x,.9,h.z+(q[1]==='f'?-.8:.8));gI.add(leg)});
+      all.add(tag(gI,lab));return}
+    if(k==='vr'){
+      var H=p.pins.map(function(q){return P(q[0],q[1])}),cx=H[1].x,cz=H[1].z;
+      var gv=new T.Group();var bx=new T.Mesh(new T.BoxGeometry(11,5.5,10),M(0x3a78c8,{roughness:.4}));bx.position.set(cx,3.6,cz-6.5);gv.add(bx);
+      var knob=new T.Mesh(new T.CylinderGeometry(3.4,3.4,4.5,28),M(0xd9c36a,{roughness:.3,metalness:.3}));knob.position.set(cx,8.4,cz-6.5);gv.add(knob);
+      var slot=new T.Mesh(new T.BoxGeometry(.5,.4,5),M(0x7a6a1a));slot.position.set(cx,10.7,cz-6.5);slot.rotation.y=.6;gv.add(slot);
+      H.forEach(function(h){gv.add(tube([h,new T.Vector3(h.x,1.5,h.z),new T.Vector3(h.x,2.5,cz-6.5+4)],.3,0xc4c4cc,lab))});
+      all.add(tag(gv,lab));return}
+    if(k==='npn'){
+      var H2=p.pins.map(function(q){return P(q[0],q[1])}),cx2=H2[1].x,cz2=H2[1].z;
+      var gt=new T.Group();
+      var half=new T.Mesh(new T.CylinderGeometry(2.4,2.4,4.6,28,1,false,Math.PI/2,Math.PI),M(0x1d1d1d,{roughness:.4}));half.position.set(cx2,5.4,cz2-.6);gt.add(half);
+      var flat=new T.Mesh(new T.BoxGeometry(4.8,4.6,.2),M(0x2d2d2d));flat.position.set(cx2,5.4,cz2-.6);gt.add(flat);
+      H2.forEach(function(h,i){gt.add(tube([h,new T.Vector3(h.x,1.6,h.z),new T.Vector3(h.x*.6+cx2*.4+0,3.3,cz2-.4)],.28,0xc4c4cc,lab))});
+      all.add(tag(gt,lab));return}
+  });
+
+  // ---- wires
+  var WC={'5V':0xe02020,GND:0x202020,VREF:0x1ea03c,X:0x8a3fb0,UN:0x888888};
+  D.wires.forEach(function(w){var a=P(w[0][0],w[0][1]),b=P(w[1][0],w[1][1]),col=WC[w[2]]||0x2f6fe0,
+      dist=a.distanceTo(b),h=Math.min(16,5+dist*.22);
+    var m1=a.clone().lerp(b,.3);m1.y=h;var m2=a.clone().lerp(b,.7);m2.y=h;
+    var wire=tube([a,new T.Vector3(a.x,3.5,a.z),m1,m2,new T.Vector3(b.x,3.5,b.z),b],.6,col,'สายจั๊มเปอร์ ('+(w[2]==='VREF'?'Vref':w[2])+')');all.add(wire);
+    [a,b].forEach(function(e){var pin=new T.Mesh(new T.CylinderGeometry(.55,.55,2.4,12),M(0x444444));pin.position.set(e.x,1.2,e.z);all.add(tag(pin,'ปลายสาย'))})});
+
+  function signSprite(txt,pos,col){var cvs=document.createElement('canvas');cvs.width=64;cvs.height=64;var g=cvs.getContext('2d');g.fillStyle=col;g.beginPath();g.arc(32,32,28,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=5;g.stroke();g.fillStyle='#fff';g.font='700 '+(txt.length>1?26:44)+'px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,32,34);
+    var sp=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cvs),transparent:true,depthTest:false}));sp.scale.set(4.6,4.6,1);sp.position.copy(pos);sp.renderOrder=10;all.add(sp)}
+  function signs3d(p,holes){if(!p.signs)return;holes.forEach(function(h,i){var sn=p.signs[i];if(!sn)return;signSprite(sn,h.clone().add(new T.Vector3(0,10,-2.5)),sn==='+'?'#e02020':sn==='−'?'#2c5fd6':'#555')})}
+  D.parts.forEach(function(p){signs3d(p,p.pins.map(function(q){return P(q[0],q[1])}))});
+  D.ports.forEach(function(p){if(p.signs)signs3d(p,[P(p.hole[0],p.hole[1])])});
+  // ---- Arduino Leonardo (behind the breadboard) with a pin header
+  var ard=new T.Group(),AW=68.6,AH=53.3,az=ROWY.T5V*K-ZC-AH/2-26;
+  var pcb=new T.Mesh(new T.BoxGeometry(AW,1.6,AH),M(0x0f6c8c,{roughness:.5}));pcb.position.set(-XC+AW/2+6,.8,az);ard.add(pcb);
+  var usb=new T.Mesh(new T.BoxGeometry(8,6,12),M(0xbbbbbb,{metalness:.7,roughness:.3}));usb.position.set(-XC+3,4,az-10);ard.add(usb);
+  var chip=new T.Mesh(new T.BoxGeometry(12,1.6,12),M(0x1a1a1a));chip.position.set(-XC+AW/2+14,2.4,az);ard.add(chip);
+  var hdrZ=az+AH/2-1.5;var pinsA={};
+  function ap(name,x){var h=new T.Mesh(new T.BoxGeometry(2.2,8.5,2.2),M(0x222222));h.position.set(x,4.3,hdrZ);ard.add(h);var gold=new T.Mesh(new T.BoxGeometry(.6,3,.6),M(0xd9b13a,{metalness:.8}));gold.position.set(x,9.6,hdrZ);ard.add(gold);pinsA[name]=new T.Vector3(x,9.8,hdrZ)}
+  var x00=-XC+AW/2+6-AW/2+14;['IOREF','RST','3V3','5V','GND','GND2','VIN'].forEach(function(n,i){ap(n,x00+i*2.54)});['A0','A1','A2','A3','A4','A5'].forEach(function(n,i){ap(n,x00+22+i*2.54)});
+  // digital header on the same edge for D9 (compact, labelled)
+  ap('D9',x00+44);
+  all.add(tag(ard,'Arduino Leonardo'));
+  function labelSprite(txt,pos,col){var cvs=document.createElement('canvas');cvs.width=256;cvs.height=64;var g=cvs.getContext('2d');g.font='700 34px sans-serif';g.textAlign='center';g.fillStyle=col||'#222';g.fillText(txt,128,44);
+    var sp=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cvs),transparent:true}));sp.scale.set(14,3.5,1);sp.position.copy(pos);all.add(sp);return sp}
+  ['5V','GND','A0','D9'].forEach(function(n){labelSprite(n,pinsA[n].clone().add(new T.Vector3(0,4.5,0)),'#444')});
+  // Arduino wires (ports)
+  var PM={f3:['5V',0xe02020],f4:['GND',0x202020],f2:['A0',0x2f9fe0],f5:['D9',0xf08000]};
+  D.ports.forEach(function(p){if(!PM[p.id])return;var h=P(p.hole[0],p.hole[1]),a=pinsA[PM[p.id][0]].clone(),mid=a.clone().lerp(h,.5);mid.y=26+(p.id==='f4'?4:0)+(p.id==='f5'?7:0);
+    var w=tube([a,new T.Vector3(a.x,14,a.z),mid,new T.Vector3(h.x,14,h.z),new T.Vector3(h.x,3.5,h.z),h],.6,PM[p.id][1],'สายไป Arduino '+PM[p.id][0]);all.add(w)});
+  // ---- sensors (on the case lid): phototransistor + IR LED with long leads
+  var SX3=P(27,'a').x, SZ=P(1,'T5V').z-9;
+  function sensor(idA,idB,body,name,clear,sx){
+    var pa=D.ports.filter(function(q){return q.id===idA})[0],pb=D.ports.filter(function(q){return q.id===idB})[0];
+    var a=P(pa.hole[0],pa.hole[1]),b=P(pb.hole[0],pb.hole[1]);
+    var cx=sx,cz=SZ;
+    var g=new T.Group();
+    var cyl=new T.Mesh(new T.CylinderGeometry(2.5,2.5,6,28),M(body,{roughness:.2,transparent:!!clear,opacity:clear?.6:1}));cyl.position.set(cx,24,cz);g.add(cyl);
+    var dome=new T.Mesh(new T.SphereGeometry(2.5,28,14,0,Math.PI*2,0,Math.PI/2),M(body,{roughness:.15,transparent:!!clear,opacity:clear?.6:1}));dome.position.set(cx,27,cz);g.add(dome);
+    var rim=new T.Mesh(new T.CylinderGeometry(3,3,.8,28),M(body,{transparent:!!clear,opacity:clear?.6:1}));rim.position.set(cx,21.2,cz);g.add(rim);
+    [[a,-.9],[b,.9]].forEach(function(e){g.add(tube([e[0],new T.Vector3(e[0].x,8,e[0].z),new T.Vector3(cx+e[1],16,cz),new T.Vector3(cx+e[1],21,cz)],.3,0xc4c4cc,name))});
+    all.add(tag(g,name));labelSprite(name.split(' ·')[0],new T.Vector3(cx,35,cz),'#444');return new T.Vector3(cx,24,cz)}
+  var sPT=sensor('f1','f0',0x222222,'Phototransistor 5mm 940nm (หัวดำ) · ใบยืม 4',false,SX3-5.5);
+  var sIR=sensor('f6','f7',0xeeeeee,'IR LED 5mm 940nm (หัวใส) · ใบยืม 5',true,SX3+5.5);
+
+  var bar=new T.Mesh(new T.BoxGeometry(.9,9,7),M(0x111111));bar.position.set(SX3,24,SZ);all.add(tag(bar,'ผนังกันแสงระหว่างตัวส่งกับตัวรับ'));
+  var pad=new T.Mesh(new T.BoxGeometry(24,1.4,13),M(0xf6c9a8,{transparent:true,opacity:.55,roughness:.7}));pad.position.set(SX3,32.5,SZ);all.add(tag(pad,'ตำแหน่งวางนิ้ว (ทับตัวส่งและตัวรับพร้อมกัน)'));
+  labelSprite('วางนิ้วตรงนี้',new T.Vector3(SX3,39,SZ),'#a05a2c');
+  // ---- camera control (orbit)
+  var tgt=new T.Vector3(0,3,0),sph={r:230,th:.9,ph:.75},autoSpin=false;
+  function setCam(){var s=Math.sin(sph.ph),c=Math.cos(sph.ph);cam.position.set(tgt.x+sph.r*s*Math.sin(sph.th),tgt.y+sph.r*c,tgt.z+sph.r*s*Math.cos(sph.th));cam.lookAt(tgt)}
+  sph.th=0.5;sph.ph=0.95;
+  var view=null;
+  function goto(t,p,r,tg,btn){view={th:t,ph:p,r:r,tg:tg.clone()};['vIso','vTop','vFront','vSens'].forEach(function(i){$(i).className=''});if(btn)$(btn).className='on'}
+  $('vIso').addEventListener('click',function(){goto(.5,.95,230,new T.Vector3(0,3,-8),'vIso')});
+  $('vTop').addEventListener('click',function(){goto(0,.08,190,new T.Vector3(0,0,-8),'vTop')});
+  $('vFront').addEventListener('click',function(){goto(0,1.38,170,new T.Vector3(0,6,0),'vFront')});
+  $('vSens').addEventListener('click',function(){goto(.25,1.0,95,new T.Vector3(SX3,26,SZ),'vSens')});
+  $('vSpin').addEventListener('click',function(){autoSpin=!autoSpin;$('vSpin').textContent='หมุนเอง: '+(autoSpin?'เปิด':'ปิด');$('vSpin').className=autoSpin?'on':''});
+  var drag=null,pinch=null;
+  cv.addEventListener('pointerdown',function(e){cv.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,btn:e.button,pan:e.button===2||e.shiftKey};view=null});
+  cv.addEventListener('contextmenu',function(e){e.preventDefault()});
+  cv.addEventListener('pointermove',function(e){
+    if(drag&&!pinch){var dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+      if(drag.pan){var k=sph.r*.0016;var right=new T.Vector3().setFromMatrixColumn(cam.matrix,0),up=new T.Vector3().setFromMatrixColumn(cam.matrix,1);tgt.addScaledVector(right,-dx*k).addScaledVector(up,dy*k)}
+      else{sph.th-=dx*.006;sph.ph=Math.min(1.5,Math.max(.05,sph.ph-dy*.006))}}
+    hover(e)});
+  cv.addEventListener('pointerup',function(){drag=null});
+  cv.addEventListener('wheel',function(e){e.preventDefault();sph.r=Math.min(500,Math.max(40,sph.r*Math.exp(e.deltaY*.0012)));view=null},{passive:false});
+  var tp={};
+  cv.addEventListener('touchstart',function(e){if(e.touches.length===2){pinch=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)}},{passive:true});
+  cv.addEventListener('touchmove',function(e){if(e.touches.length===2&&pinch){var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);sph.r=Math.min(500,Math.max(40,sph.r*pinch/d));pinch=d;view=null}},{passive:true});
+  cv.addEventListener('touchend',function(){pinch=null},{passive:true});
+  // hover tooltip
+  var ray=new T.Raycaster(),mouse=new T.Vector2(),tip=$('tip');
+  function hover(e){var r=cv.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);ray.setFromCamera(mouse,cam);
+    var hits=ray.intersectObjects(all.children,true).filter(function(h){return h.object.userData.label&&h.object.userData.label!=='ขาชิ้นส่วน'&&h.object.userData.label!=='ปลายสาย'&&h.object.userData.label!=='breadboard (เบรดบอร์ด)'});
+    if(hits.length){tip.textContent=hits[0].object.userData.label;tip.style.left=(e.clientX-r.left)+'px';tip.style.top=(e.clientY-r.top)+'px';tip.classList.add('show')}else tip.classList.remove('show')}
+  cv.addEventListener('pointerleave',function(){tip.classList.remove('show')});
+  // legend
+  
+  var BANDHEX={brown:'#7a4b1b',black:'#111',orange:'#f08000',red:'#dd1111',yellow:'#e8d000',gold:'#c9a227'};
+  function sw(p){return p.bands?p.bands.map(function(b){return '<span class="swatch" style="display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:'+BANDHEX[b]+'"></span>'}).join(''):''}
+  function fillTable(id){var rows=D.parts.concat(D.ports.filter(function(p){return p.code})).map(function(p){return '<tr><td>'+p.label+'</td><td>'+(p.code||'—')+' '+sw(p)+'</td><td>'+(p.signs?p.signs.map(function(sn,i){return sg(sn)+' '+p.snote[i]}).join('<br>'):'—')+'</td><td>'+(p.no?'No.'+p.no:'—')+'</td></tr>'}).join('');
+    document.getElementById(id).innerHTML='<thead><tr><th>ชิ้นส่วน</th><th>รหัสบนตัว / แถบสี</th><th>ขั้ว / ขา</th><th>ใบยืม</th></tr></thead><tbody>'+rows+'</tbody>'}
+  function sg(s){return '<b style="display:inline-block;min-width:22px;text-align:center;border-radius:99px;padding:0 6px;color:#fff;background:'+(s==='+'?'#e02020':s==='−'?'#2c5fd6':'#777')+'">'+s+'</b>'}
+  
+  fillTable('ptab');
+  var LG=[['#e02020','สาย/ขา 5V'],['#202020','สาย/ขา GND'],['#2f6fe0','สายสัญญาณ'],['#e3c79a','ตัวต้านทาน (แถบสีบอกค่า)'],['#555','สายกลุ่มเดียวกันตามสี']];
+  $('legend').innerHTML=LG.map(function(l){return '<span><i style="background:'+l[0]+'"></i>'+l[1]+'</span>'}).join('');
+
+  function resize(){var r=cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1);renderer.setPixelRatio(d);renderer.setSize(r.width,r.height,false);cam.aspect=r.width/r.height;cam.updateProjectionMatrix()}
+  window.addEventListener('resize',resize);
+  if(window.matchMedia)window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',bgcol);
+  bgcol();resize();setCam();
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function loop(){
+    if(view){var k=reduce?1:.1;sph.th+=(view.th-sph.th)*k;sph.ph+=(view.ph-sph.ph)*k;sph.r+=(view.r-sph.r)*k;tgt.lerp(view.tg,k)}
+    else if(autoSpin&&!drag&&!reduce)sph.th+=.004;
+    setCam();renderer.render(scene,cam);requestAnimationFrame(loop)}
+  goto(.5,.95,230,new T.Vector3(0,3,-8),'vIso');
+  loop();
+})();
+</script>

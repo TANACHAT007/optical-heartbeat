@@ -41,9 +41,13 @@ canvas:active{cursor:grabbing}
 .foot{color:var(--muted);font-size:12.5px}
 .ptab th,.ptab td{text-align:left;padding:5px 8px;border-bottom:1px dashed var(--line)}.ptab th{font-family:var(--f-display);font-size:12.5px;color:var(--muted)}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
+.tabs{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-family:'Sarabun',system-ui,sans-serif;font-size:13.5px;margin:0 0 12px;padding:8px 12px;border:2px solid var(--line);border-radius:16px;background:var(--card)}
+.tabs .grp{font-weight:700;color:var(--muted);margin-left:6px}.tabs .grp:first-child{margin-left:0}
+.tabs a{color:var(--fg);text-decoration:none;padding:3px 11px;border-radius:99px;border:2px solid transparent}
+.tabs a:hover{border-color:var(--pink)}.tabs a.on{background:var(--pink);color:#fff;font-weight:700}
 </style>
 
-<div class="wrap">
+<div class="wrap"><nav class="tabs" aria-label="เลือกแบบวงจร"><span class="grp">แบบหลัก</span><a href="sim.html">จำลอง</a><a href="builder.html">ต่อวงจร</a><a href="view3d.html" class="on" aria-current="page">3 มิติ</a><span class="grp">แบบง่าย (สำรอง)</span><a href="backup.html">คู่มือ+โปรแกรม</a><a href="builder_simple.html">ต่อวงจร</a><a href="view3d_simple.html">3 มิติ</a></nav>
   <div>
     <h1>วงจรชีพจร 3 มิติ</h1>
     <p class="sub">วงจรตามแบบเฉลยบน breadboard ลากเมาส์หมุน เลื่อนล้อซูม ชี้ที่ชิ้นส่วนเพื่อดูชื่อ</p>
