@@ -1,0 +1,254 @@
+<title>วงจรสำรองแบบง่าย</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&family=Sarabun:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* layout: single column of cards: what/why, schematic, parts, wiring, meter checks, program, tiny simulator, troubleshooting. Candy palette on soft white / deep plum */
+:root{
+  --bg:#fff8fb; --card:#ffffff; --fg:#2a1f3d; --muted:#7a6f8f; --line:#f0e3ee;
+  --pink:#ff5d8f; --teal:#18b8a6; --sun:#ffb81c; --sky:#4aa3ff; --grape:#8b5cf6; --good:#17b26a; --bad:#ef4444;
+  --code:#1c1530; --codefg:#e9e0ff; --scope:#fffdf6; --grid:#f1e7d6; --shadow:0 6px 0 rgba(139,92,246,.10);
+  --f-display:'Mali','Sarabun',sans-serif; --f-body:'Sarabun',system-ui,sans-serif; --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#171126; --card:#221a36; --fg:#f6eefc; --muted:#a99cc4; --line:#352a52; --code:#0e0a1b; --scope:#1b1430; --grid:#33274f; --shadow:0 6px 0 rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171126; --card:#221a36; --fg:#f6eefc; --muted:#a99cc4; --line:#352a52; --code:#0e0a1b; --scope:#1b1430; --grid:#33274f; --shadow:0 6px 0 rgba(0,0,0,.35); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--f-display);font-size:clamp(25px,4.5vw,34px);margin:0;line-height:1.15}
+h2{font-family:var(--f-display);font-size:18px;margin:0 0 8px}
+.sub{color:var(--muted);margin:3px 0 0}
+.card{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:14px 18px;box-shadow:var(--shadow);min-width:0}
+.pill{display:inline-block;border-radius:999px;padding:2px 12px;font-weight:700;font-size:13px;font-family:var(--f-display)}
+.pill.ok{background:color-mix(in srgb,var(--good) 16%,var(--card));color:var(--good)}
+.pill.no{background:color-mix(in srgb,var(--bad) 14%,var(--card));color:var(--bad)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:6px 9px;border-bottom:1px dashed var(--line);vertical-align:top}
+th{font-family:var(--f-display);font-size:13px;color:var(--muted);white-space:nowrap}
+td.m{font-family:var(--f-mono);white-space:nowrap}
+.pol{display:inline-block;min-width:22px;text-align:center;border-radius:99px;padding:0 6px;color:#fff;font-weight:700}
+.pol.p{background:#e02020}.pol.n{background:#2c5fd6}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+svg{max-width:100%;height:auto;display:block}
+pre{background:var(--code);color:var(--codefg);border-radius:14px;padding:14px;overflow:auto;font-family:var(--f-mono);font-size:12.5px;line-height:1.5;max-height:380px;margin:8px 0 0}
+button{font:inherit;font-family:var(--f-display);font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:7px 16px;cursor:pointer;transition:transform .12s}
+button:hover{transform:translateY(-2px) rotate(-1deg)}button:active{transform:scale(.97)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+button.primary{background:var(--pink);border-color:var(--pink);color:#fff}
+.ctl{display:flex;flex-direction:column;gap:2px;margin:6px 0;min-width:150px;flex:1}
+.ctl label{display:flex;justify-content:space-between;font-weight:600;font-size:13.5px;gap:6px}
+.ctl output{font-family:var(--f-mono);color:var(--grape)}
+input[type=range],select{width:100%;accent-color:var(--pink);font:inherit}
+select{padding:5px 8px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--fg)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+canvas{width:100%;height:160px;display:block;background:var(--scope);border:2px solid var(--line);border-radius:12px}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:8px}
+.res div{background:var(--scope);border:2px solid var(--line);border-radius:12px;padding:6px 10px;font-size:12.5px;color:var(--muted)}
+.res b{display:block;font-family:var(--f-mono);font-size:17px;color:var(--fg)}
+.note{background:color-mix(in srgb,var(--sun) 16%,var(--card));border-radius:14px;padding:9px 14px;font-size:14px}
+.foot{color:var(--muted);font-size:12.5px}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>วงจรสำรองแบบง่าย</h1>
+    <p class="sub">ใช้เซนเซอร์ชุดเดิม แต่ตัดตัวขยาย ตัวไบอัส Vref ตัวเก็บประจุตัดสัญญาณ และโวลุ่มออกหมด เหลือจุดที่ต่อผิดได้น้อยที่สุด ให้ซอฟต์แวร์เป็นคนตัดค่านิ่งออกแทน</p>
+  </div>
+
+  <section class="card">
+    <h2>ทำไมแบบนี้ง่ายกว่า</h2>
+    <div class="two">
+      <div>
+        <span class="pill no">วงจรหลัก</span>
+        <p style="margin:6px 0 0">ตัวรับ → C10µF → ขั้วขยาย (LM358 + VR + R2.4k) → ตัวกรอง → A0 ต้องมี Vref 2.5 V, R ไบอัส, ขั้ว C และโวลุ่มทุกตัวถูกต้องพร้อมกัน ตอนต่อจริงติดที่จุดเหล่านี้ทีละจุด</p>
+      </div>
+      <div>
+        <span class="pill ok">วงจรสำรอง</span>
+        <p style="margin:6px 0 0">ตัวรับ → R โหลด → LM358 เป็น <b>ตัวบัฟเฟอร์</b> (ขา 1 ต่อขา 2) → A0 ไม่มีอะไรต้องไบอัส ไม่มีขั้วต้องระวัง วัดค่าที่ A0 ได้ตรง ๆ ว่าเท่ากับแรงดันที่ตัวรับ</p>
+      </div>
+    </div>
+    <p class="foot" style="margin-top:8px">ยังมีทรานซิสเตอร์ (Q1 ขับ IR LED) และ op-amp (LM358 เป็นบัฟเฟอร์) ตามเงื่อนไขของโจทย์ ความไวมาจากโปรแกรม: เฉลี่ย ADC ตลอด 20 ms ต่อตัวอย่าง (ตัดไฟบ้าน) และใช้ reference 2.56 V บน Leonardo ทำให้ได้ 2.5 mV ต่อ count</p>
+  </section>
+
+  <section class="card">
+    <h2>วงจร</h2>
+    <svg viewBox="0 0 880 400" role="img" aria-label="วงจรสำรอง: IR LED ขับด้วย Q1, phototransistor กับ R โหลด, LM358 บัฟเฟอร์ แล้วเข้า A0">
+      <g fill="none" stroke="var(--fg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" font-family="Sarabun,sans-serif">
+        <line x1="30" y1="40" x2="850" y2="40" stroke="#e02020"/><text x="34" y="30" fill="#e02020" stroke="none" font-weight="700" font-size="14">+5V</text>
+        <line x1="30" y1="360" x2="850" y2="360" stroke="var(--fg)"/><text x="34" y="380" fill="var(--fg)" stroke="none" font-weight="700" font-size="14">GND</text>
+        <!-- IR branch -->
+        <line x1="110" y1="40" x2="110" y2="70"/><path d="M110 70 l8 6 -16 12 16 12 -16 12 8 6"/><text x="124" y="96" fill="var(--fg)" stroke="none" font-size="13">R220</text>
+        <line x1="110" y1="118" x2="110" y2="140"/><path d="M96 140 H124 L110 162 Z" fill="var(--sun)"/><line x1="96" y1="164" x2="124" y2="164"/>
+        <text x="130" y="154" fill="var(--fg)" stroke="none" font-size="13">IR LED</text>
+        <line x1="110" y1="164" x2="110" y2="206"/>
+        <circle cx="116" cy="240" r="30"/><line x1="96" y1="226" x2="96" y2="254" stroke-width="3.5"/><line x1="96" y1="232" x2="110" y2="212"/><line x1="96" y1="248" x2="110" y2="268"/><line x1="110" y1="268" x2="110" y2="360"/>
+        <text x="132" y="276" fill="var(--fg)" stroke="none" font-size="13">Q1 BC548</text>
+        <line x1="96" y1="240" x2="62" y2="240"/><path d="M62 240 h-6 l-4 -7 -8 14 -8 -14 -4 7 h-6" transform="translate(-6 0)"/><line x1="10" y1="240" x2="30" y2="240"/>
+        <text x="10" y="224" fill="var(--fg)" stroke="none" font-size="12">D9 → R1k</text>
+        <!-- finger -->
+        <ellipse cx="300" cy="150" rx="150" ry="22" fill="#f6c9a8" stroke="#c98f6b"/><text x="300" y="155" text-anchor="middle" fill="#7a4a2a" stroke="none" font-weight="700" font-size="14">นิ้ว (ทาบทับทั้งสองตัว)</text>
+        <line x1="130" y1="172" x2="190" y2="154" stroke="var(--sun)" stroke-dasharray="5 4"/><line x1="410" y1="154" x2="472" y2="174" stroke="var(--sun)" stroke-dasharray="5 4"/>
+        <!-- PT branch -->
+        <line x1="500" y1="40" x2="500" y2="190"/><circle cx="506" cy="212" r="26" fill="var(--card)"/><line x1="494" y1="200" x2="494" y2="224" stroke-width="3.5"/><line x1="494" y1="206" x2="500" y2="190"/><line x1="494" y1="218" x2="506" y2="236"/><line x1="506" y1="236" x2="506" y2="258"/>
+        <text x="540" y="206" fill="var(--fg)" stroke="none" font-size="13">Phototransistor</text>
+        <line x1="506" y1="258" x2="506" y2="282"/><circle cx="506" cy="258" r="3" fill="var(--fg)"/>
+        <line x1="506" y1="258" x2="506" y2="282"/><path d="M506 282 l8 5 -16 10 16 10 -16 10 8 5"/><line x1="506" y1="332" x2="506" y2="360"/><text x="522" y="312" fill="var(--fg)" stroke="none" font-size="13">R10k (โหลด)</text>
+        <text x="460" y="262" fill="var(--grape)" stroke="none" font-weight="700" font-size="13">NPT</text>
+        <!-- to opamp + input -->
+        <line x1="506" y1="258" x2="610" y2="258"/><line x1="610" y1="258" x2="610" y2="212"/><line x1="610" y1="212" x2="650" y2="212"/>
+        <!-- opamp -->
+        <path d="M650 180 L760 235 L650 290 Z" fill="var(--card)"/><text x="662" y="217" fill="var(--fg)" stroke="none" font-size="16" font-weight="700">+</text><text x="662" y="276" fill="var(--fg)" stroke="none" font-size="16" font-weight="700">−</text>
+        <text x="690" y="241" fill="var(--fg)" stroke="none" font-size="14">LM358</text>
+        <text x="624" y="204" fill="#c60" stroke="none" font-size="12">ขา3</text><text x="624" y="296" fill="#c60" stroke="none" font-size="12">ขา2</text><text x="770" y="228" fill="#c60" stroke="none" font-size="12">ขา1</text>
+        <line x1="650" y1="264" x2="620" y2="264"/><line x1="620" y1="264" x2="620" y2="320"/><line x1="620" y1="320" x2="810" y2="320"/><line x1="810" y1="320" x2="810" y2="235"/><line x1="760" y1="235" x2="810" y2="235"/>
+        <circle cx="810" cy="235" r="3" fill="var(--fg)"/><line x1="810" y1="235" x2="850" y2="235"/><circle cx="850" cy="235" r="4" fill="var(--card)"/>
+        <text x="760" y="388" fill="var(--fg)" stroke="none" font-size="12" display="none"></text>
+        <text x="760" y="205" fill="var(--grape)" stroke="none" font-weight="700" font-size="14" text-anchor="end" display="none"></text>
+        <text x="850" y="222" text-anchor="end" fill="var(--grape)" stroke="none" font-weight="700" font-size="14">→ Arduino A0</text>
+        <text x="716" y="336" text-anchor="middle" fill="var(--muted)" stroke="none" font-size="12">ขา 1 ต่อขา 2 (บัฟเฟอร์)</text>
+        <text x="716" y="150" fill="var(--muted)" stroke="none" font-size="12" text-anchor="middle">ไฟ LM358: ขา8 = 5V, ขา4 = GND</text>
+      </g>
+    </svg>
+    <p class="foot">ขา 5, 6, 7 ของ LM358 (op-amp ตัวที่สอง) ที่ไม่ใช้: ต่อขา 6 กับขา 7 ด้วยสายสั้น และต่อขา 5 ลง GND (สายสั้นข้ามร่องกลางจากคอลัมน์ 27 แถว d ไปแถว g)</p>
+  </section>
+
+  <section class="card">
+    <h2>อุปกรณ์ (ใช้น้อยกว่าวงจรหลักมาก)</h2>
+    <div class="tw"><table><thead><tr><th>ชิ้นส่วน</th><th>รหัส / แถบสี</th><th>ขั้ว / ขา</th><th>ใบยืม</th></tr></thead><tbody id="parts"></tbody></table></div>
+    <p class="foot" style="margin-top:6px">ตัวต้านทานทุกตัวให้ <b>วัดด้วยมิเตอร์ก่อนใช้</b> เพราะแถบสีส้มกับเหลืองแยกยาก (10k กับ 100k เคยสลับกันแล้ว)</p>
+  </section>
+
+  <section class="card">
+    <h2>ต่อบน breadboard</h2>
+    <p class="note">คอลัมน์และแถวเหมือนแบบเดิมทุกประการ ถ้าคุณต่อวงจรหลักไว้แล้ว <b>ไม่ต้องรื้อใหม่</b> ดูแถว "แก้บอร์ดเดิม" ด้านล่าง</p>
+    <div class="tw"><table><thead><tr><th>#</th><th>ต่ออะไร</th><th>จากรู</th><th>ไปรู</th></tr></thead><tbody>
+      <tr><td>1</td><td>สายไฟ 5V จาก Arduino</td><td>Arduino 5V</td><td class="m">แถบ 5V คอลัมน์ 1</td></tr>
+      <tr><td>2</td><td>สาย GND จาก Arduino</td><td>Arduino GND</td><td class="m">แถบ GND คอลัมน์ 1</td></tr>
+      <tr><td>3</td><td>LM358 คร่อมร่องกลาง รอยบากซ้าย</td><td colspan="2" class="m">ขา 1 ที่ 24f (ขา 8 ที่ 24e)</td></tr>
+      <tr><td>4</td><td>ไฟเข้า LM358 ขา 8</td><td class="m">24a</td><td class="m">แถบ 5V คอลัมน์ 24</td></tr>
+      <tr><td>5</td><td>GND ของ LM358 ขา 4</td><td class="m">27g</td><td class="m">แถบ GND คอลัมน์ 27</td></tr>
+      <tr><td>6</td><td>ผูก op-amp ตัวที่ไม่ใช้ (ขา 6 กับ 7)</td><td class="m">26d</td><td class="m">25d</td></tr>
+      <tr><td>7</td><td>ผูกขา 5 ลง GND</td><td class="m">27d</td><td class="m">27g</td></tr>
+      <tr><td>8</td><td><b>phototransistor</b> ขายาว (collector)</td><td colspan="2" class="m">แถบ 5V คอลัมน์ 12</td></tr>
+      <tr><td>9</td><td><b>phototransistor</b> ขาสั้น (emitter) = จุด NPT</td><td colspan="2" class="m">14g</td></tr>
+      <tr><td>10</td><td><b>R10k โหลด</b></td><td class="m">14j</td><td class="m">แถบ GND คอลัมน์ 15</td></tr>
+      <tr><td>11</td><td><b>สาย NPT → ขา 3</b></td><td class="m">14i</td><td class="m">26g</td></tr>
+      <tr><td>12</td><td><b>สายบัฟเฟอร์ ขา 1 → ขา 2</b></td><td class="m">24h</td><td class="m">25h</td></tr>
+      <tr><td>13</td><td><b>สาย A0</b> (จาก Arduino A0)</td><td>Arduino A0</td><td class="m">24g (ขาออก ขา 1)</td></tr>
+      <tr><td>14</td><td>Q1 BC548 (C-B-E ซ้าย→ขวา หน้าแบนหันหาตัวเอง)</td><td colspan="2" class="m">38h, 39h, 40h</td></tr>
+      <tr><td>15</td><td>สาย E ของ Q1 ลง GND</td><td class="m">40j</td><td class="m">แถบ GND คอลัมน์ 40</td></tr>
+      <tr><td>16</td><td>R1k ฐาน Q1</td><td class="m">39i</td><td class="m">43i</td></tr>
+      <tr><td>17</td><td>สาย D9</td><td>Arduino D9</td><td class="m">43g</td></tr>
+      <tr><td>18</td><td>R220</td><td class="m">แถบ 5V คอลัมน์ 41</td><td class="m">44a</td></tr>
+      <tr><td>19</td><td><b>IR LED</b> ขายาว (<span class="pol p">+</span>)</td><td colspan="2" class="m">44b</td></tr>
+      <tr><td>20</td><td><b>IR LED</b> ขาสั้น (<span class="pol n">−</span>)</td><td colspan="2" class="m">38i</td></tr>
+    </tbody></table></div>
+    <div class="note" style="margin-top:10px"><b>แก้บอร์ดเดิม (วงจรหลัก → วงจรสำรอง)</b><br>
+      <b>ถอดออก:</b> C10µF ตัดสัญญาณ (20h↔14h) · R100k ไบอัส (17i↔20i) และสาย 17j→Vref · สาย X (20g→26g) · R2.4k (25i↔22i) และสาย 22j→Vref · โวลุ่ม VR กับสามสายของมัน (24h→29b, 25h→31b, 31c→33c) และ C10nF · ตัวกรอง R100k (24j↔28j) กับ C470nF · ตัวแบ่ง Vref (ปล่อยไว้ได้ ไม่เป็นไร)<br>
+      <b>เพิ่ม/ย้าย:</b> ข้อ 6, 7, 11, 12, 13 ในตารางด้านบน (สาย NPT→ขา 3, ขา 1→ขา 2, และย้ายสาย A0 มาที่ 24g)
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>วัดด้วยมิเตอร์ ควรได้เท่านี้ (ปลายดำแตะ GND)</h2>
+    <div class="tw"><table><thead><tr><th>จุดวัด</th><th>ควรได้</th><th>ถ้าไม่ใช่</th></tr></thead><tbody>
+      <tr><td>ขา 8 ของ LM358</td><td class="m">5 V</td><td>ไฟเข้า IC ไม่ครบ</td></tr>
+      <tr><td>ขา 1 / ขา 2 / ขา 3</td><td class="m">เท่ากันทั้งสามขา = NPT</td><td>ขา 1 ไม่เท่าขา 3 → สายบัฟเฟอร์ (ข้อ 12) หรือสาย NPT (ข้อ 11) ผิด</td></tr>
+      <tr><td>NPT (14j) ไม่มีนิ้ว</td><td class="m">0.05–1 V</td><td>0 เป๊ะ → ตัวรับไม่ได้ต่อ NPT (ขา emitter ต้องที่ 14g)</td></tr>
+      <tr><td>NPT ตอนนิ้วทาบนิ่ง</td><td class="m">0.3–2 V</td><td>เกิน ~2.5 V = แสงเยอะไป ใช้ R4.7k แทน R10k, ต่ำกว่า 0.05 V = แสงน้อยไป ใช้ R22k–100k</td></tr>
+      <tr><td>ฐาน Q1 (39h)</td><td class="m">~0.7 V</td><td>5 V = ขา B ไม่แตะ R1k</td></tr>
+      <tr><td>ขา C ของ Q1 (38h)</td><td class="m">~0.02–0.2 V</td><td>ใกล้ 5 V → Q1 ไม่นำ (ขา E ไม่ลง GND)</td></tr>
+      <tr><td>IR LED ในกล้องมือถือ</td><td class="m">แสงม่วงอ่อน</td><td>ไม่ติด → ขั้ว LED กลับ หรือหยิบ LED ผิดตัว</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <section class="card">
+    <h2>โปรแกรม (ใช้กับ Leonardo และ UNO)</h2>
+    <div class="row"><button id="copy" class="primary" type="button">คัดลอกโค้ด</button><span class="foot" id="copyMsg" style="align-self:center"></span></div>
+    <pre id="code"></pre>
+    <div class="note" style="margin-top:10px">
+      <b>อัปโหลด:</b> Arduino IDE เลือกบอร์ด <b>Arduino Leonardo</b> (หรือ UNO) เลือกพอร์ต แล้วกด Upload · หรือ <code>arduino-cli upload -p &lt;พอร์ต&gt; --fqbn arduino:avr:leonardo heartbeat_backup</code><br>
+      <b>ใช้:</b> เปิด Serial Monitor 115200 · วางนิ้วเบา ๆ ทาบทั้งสองตัว นิ่ง ๆ 5–10 วินาที จะเห็น <code>BPM,72</code> · ส่ง <code>d</code> เพื่อดูแรงดันที่ตัวรับ (<code>DC,count,volts</code>) ใช้เลือก R โหลด · ส่ง <code>p</code> เพื่อดูกราฟใน Serial Plotter · ไม่มีนิ้วจะขึ้น "No pulse"
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>ลองจำลองดูว่าสัญญาณพอไหม</h2>
+    <p class="foot" style="margin:0 0 6px">ใช้ตรรกะตรวจชีพจรเดียวกับโปรแกรมข้างบน ปรับกระแสแสงสะท้อนที่ตัวรับและ R โหลด ดูว่าโปรแกรมจับชีพจรได้ไหม (ไม่มีนิ้ว: ไม่ควรขึ้น BPM)</p>
+    <div class="row">
+      <div class="ctl"><label for="i">กระแสแสง (นิ่ง) <output id="oi"></output></label><input id="i" type="range" min="2" max="600" value="60"></div>
+      <div class="ctl"><label for="m">ชีพจรแกว่ง % <output id="om"></output></label><input id="m" type="range" min="0" max="30" value="10"></div>
+      <div class="ctl"><label for="r">R โหลด</label><select id="r"><option value="4700">4.7 kΩ</option><option value="10000" selected>10 kΩ</option><option value="100000">100 kΩ</option></select></div>
+      <div class="ctl"><label for="f">มีนิ้ว / ไม่มี</label><select id="f"><option value="1" selected>มีนิ้ว</option><option value="0">ไม่มีนิ้ว</option></select></div>
+    </div>
+    <canvas id="cv"></canvas>
+    <div class="res" id="res"></div>
+    <p class="foot" style="margin-top:6px">ค่าหน่วย: ชีพจรแกว่ง % ของกระแสนิ่ง (ของจริงมักประมาณ 0.5–3% แบบสะท้อน และ 1–5% แบบนิ้วอยู่ระหว่างตัวส่งตัวรับ) ผลจำลองใช้ reference 2.56 V แบบ Leonardo</p>
+  </section>
+
+  <section class="card">
+    <h2>ถ้ายังไม่ขึ้น</h2>
+    <div class="tw"><table><tbody>
+      <tr><td><b>BPM ไม่ขึ้นเลย</b></td><td>ส่ง <code>d</code> ดูค่า DC: ถ้า 0.0 นิ่ง = ตัวรับไม่ได้ต่อ NPT หรือขา 1 ไม่ถึง A0 · ถ้า 1023 / 2.56 V = ชนเพดาน ใช้ R โหลดค่าน้อยลง</td></tr>
+      <tr><td><b>DC ปกติ แต่ BPM ไม่ขึ้น</b></td><td>ส่ง <code>p</code> ดูเส้นม่วง ถ้านิ่งตอนวางนิ้ว = แสงไม่ผ่านนิ้ว: ลองให้นิ้ว<b>อยู่ระหว่าง</b>ตัวส่งกับตัวรับที่หันเข้าหากัน (แบบหนีบนิ้ว) ซึ่งแรงกว่าแบบสะท้อนมาก</td></tr>
+      <tr><td><b>BPM วิ่งไม่นิ่ง</b></td><td>นิ้วขยับ/กดแรง: วางแขนบนโต๊ะ วางเบา ๆ นิ่ง 10 วินาที และกันแสงห้อง</td></tr>
+      <tr><td><b>ค่าสุ่มตอนไม่มีนิ้ว</b></td><td>สาย A0 ไม่ได้ต่อถึงขา 1 (ขาลอย) ต่อให้ถูกจุด 24g</td></tr>
+    </tbody></table></div>
+  </section>
+  <p class="foot">แบบร่างจากการคำนวณและการจำลอง ผลวัดชีพจรจริงขึ้นกับแสงที่สะท้อนหรือทะลุผ่านนิ้วของคุณ ซึ่งผมยังไม่ได้ยืนยันกับของจริงในวงจรนี้</p>
+</div>
+
+<script>
+var PARTS = [["LM358P (U1 ใช้ครึ่งเดียวเป็นบัฟเฟอร์)", "LM358P", "ขา 8 = 5V · ขา 4 = GND", "No.1"], ["Q1 ทรานซิสเตอร์ขับ IR LED", "BC548", "C ซ้าย · B กลาง · E ขวา (หน้าแบนหันหาตัวเรา)", "No.2"], ["Phototransistor 5 mm 940 nm (หัวดำ)", "—", "ขายาว collector → 5V · ขาสั้น emitter → NPT", "No.4"], ["IR LED 5 mm 940 nm (หัวใส)", "—", "<span class=\"pol p\">+</span> ขายาว (ไป R220) · <span class=\"pol n\">−</span> ขาสั้น (ไป Q1 ขา C)", "No.5"], ["R โหลดตัวรับ 10 kΩ", "น้ำตาล-ดำ-ส้ม-ทอง <span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#7a4b1b\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#111\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#f08000\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#c9a227\"></span>", "—", "No.16"], ["R ฐาน Q1 1 kΩ", "น้ำตาล-ดำ-แดง-ทอง <span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#7a4b1b\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#111\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#dd1111\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#c9a227\"></span>", "—", "No.13"], ["R จำกัดกระแส IR LED 220 Ω", "แดง-แดง-น้ำตาล-ทอง <span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#dd1111\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#dd1111\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#7a4b1b\"></span><span style=\"display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:#c9a227\"></span>", "—", "No.11"], ["ตัวเลือก: R 4.7 kΩ (ถ้าแสงแรงเกิน) หรือ 100 kΩ (ถ้าแสงอ่อน) แทนโหลด", "4.7k: เหลือง-ม่วง-แดง · 100k: น้ำตาล-ดำ-เหลือง", "—", "No.15 / 17"], ["ตัวเลือก: C 100 nF คร่อม 5V–GND ใกล้ LM358", "104", "ไม่มีขั้ว", "No.28"]];
+var CODE = "// Optical Heartbeat Detector — BACKUP (simplest circuit)\n//   IR LED -> finger -> phototransistor -> load R -> LM358 voltage follower -> R1k -> A0 (C100nF to GND)\n//   D9 -> R1k -> Q1 BC548 base (switches the IR LED, always on)\n// No Vref divider, no coupling capacitor, no gain stage: the DC part is removed in software.\n// Serial 115200:  \"BPM,<value>\" per beat\n//   'p' toggles raw plot mode  (filtered, +threshold, -threshold)\n//   'd' toggles DC print       (\"DC,<counts>,<volts>\" once per second: use it to tune the load resistor)\n\n#if defined(__AVR_ATmega32U4__)\n  #define ADC_REF INTERNAL          // Leonardo: 2.56 V reference -> 2.5 mV per count\n  const float ADC_VMAX = 2.56f;\n#else\n  #define ADC_REF DEFAULT           // UNO: 5 V reference\n  const float ADC_VMAX = 5.0f;\n#endif\n\nconst uint8_t PIN_SIG = A0;\nconst uint8_t PIN_IR = 9;\nconst uint8_t PIN_BEAT = LED_BUILTIN;\n\nconst uint16_t SAMPLE_MS = 20;       // one mains cycle (50 Hz): every sample is a mean over 20 ms -> hum cancelled\nconst uint16_t REFRACTORY_MS = 300;  // max 200 BPM\nconst uint16_t TIMEOUT_MS = 4000;    // no beat -> finger off\nconst float MIN_THR = 0.4f;          // counts: averaged samples are very quiet\nconst uint8_t AVG_N = 5;\n\nfloat baseline = 0, lowpass = 0, level = 0;\nbool baseInit = false, above = false, plotMode = false, dcMode = false;\nunsigned long lastBeat = 0, beatLedOff = 0, lastDc = 0;\nfloat bpmBuf[AVG_N];\nuint8_t bpmCount = 0, bpmIdx = 0;\n\nvoid setup() {\n  analogReference(ADC_REF);\n  pinMode(PIN_IR, OUTPUT);\n  pinMode(PIN_BEAT, OUTPUT);\n  digitalWrite(PIN_IR, HIGH);\n  Serial.begin(115200);\n  analogRead(PIN_SIG);               // first read after changing the reference is unreliable\n  Serial.println(F(\"Backup heartbeat detector ready. Rest your finger lightly on the sensor.\"));\n}\n\nvoid loop() {\n  while (Serial.available()) {\n    char c = Serial.read();\n    if (c == 'p') plotMode = !plotMode;\n    if (c == 'd') dcMode = !dcMode;\n  }\n\n  long sum = 0; uint16_t n = 0;\n  unsigned long t0 = micros();\n  while (micros() - t0 < (unsigned long)SAMPLE_MS * 1000UL) { sum += analogRead(PIN_SIG); n++; }\n  unsigned long now = millis();\n  float raw = (float)sum / n;\n\n  if (!baseInit) { baseline = raw; baseInit = true; }\n  baseline += (raw - baseline) * 0.04f;            // slow DC tracker (about 0.5 s)\n  float ac = raw - baseline;\n  lowpass += (ac - lowpass) * 0.5f;                // light smoothing\n  level = max(fabs(lowpass), level * 0.99f);       // decaying amplitude\n  float thr = max(level * 0.5f, MIN_THR);\n\n  if (dcMode && now - lastDc > 1000) {\n    lastDc = now;\n    Serial.print(F(\"DC,\")); Serial.print(raw, 1); Serial.print(','); Serial.println(raw * ADC_VMAX / 1023.0f, 3);\n  }\n  if (plotMode) {\n    Serial.print(lowpass); Serial.print(','); Serial.print(thr); Serial.print(','); Serial.println(-thr);\n  }\n\n  if (!above && lowpass > thr && now - lastBeat > REFRACTORY_MS) {\n    above = true;\n    if (lastBeat != 0) {\n      float bpm = 60000.0f / (now - lastBeat);\n      if (bpm >= 40 && bpm <= 200) {\n        bpmBuf[bpmIdx] = bpm;\n        bpmIdx = (bpmIdx + 1) % AVG_N;\n        if (bpmCount < AVG_N) bpmCount++;\n        float s = 0;\n        for (uint8_t i = 0; i < bpmCount; i++) s += bpmBuf[i];\n        if (!plotMode && !dcMode) { Serial.print(F(\"BPM,\")); Serial.println(s / bpmCount, 0); }\n      }\n    }\n    lastBeat = now;\n    digitalWrite(PIN_BEAT, HIGH);\n    beatLedOff = now + 80;\n  } else if (above && lowpass < thr * 0.3f) {\n    above = false;\n  }\n\n  if (beatLedOff && now > beatLedOff) { digitalWrite(PIN_BEAT, LOW); beatLedOff = 0; }\n\n  if (lastBeat && now - lastBeat > TIMEOUT_MS) {\n    bpmCount = 0; bpmIdx = 0; lastBeat = 0;\n    if (!plotMode && !dcMode) Serial.println(F(\"No pulse (finger off?)\"));\n  }\n}\n";
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  $('code').textContent=CODE;
+  $('parts').innerHTML=PARTS.map(function(p){return '<tr><td>'+p[0]+'</td><td>'+p[1]+'</td><td>'+p[2]+'</td><td>'+p[3]+'</td></tr>'}).join('');
+  $('copy').addEventListener('click',function(){
+    var done=function(ok){$('copyMsg').textContent=ok?'คัดลอกแล้ว':'คัดลอกไม่ได้ เลือกโค้ดแล้วกด Ctrl/⌘+C'};
+    try{navigator.clipboard.writeText(CODE).then(function(){done(true)},function(){sel();done(false)})}catch(e){sel();done(false)}
+    function sel(){var r=document.createRange();r.selectNodeContents($('code'));var s=window.getSelection();s.removeAllRanges();s.addRange(r)}});
+
+  // ---- mini simulator: same logic as heartbeat_backup.ino
+  var VMAX=2.56,CPV=VMAX/1023,CV=document.getElementById('cv');
+  function sim(){
+    var I=+$('i').value*1e-6,mod=+$('m').value/100/ (1),R=+$('r').value,finger=$('f').value==='1',bpm=72;
+    $('oi').textContent=$('i').value+' µA';$('om').textContent=$('m').value/10+' %';
+    mod=+$('m').value/10/100;
+    var dcV=Math.min((finger?I:2e-6)*R,3.5),sat=dcV>VMAX;
+    var rng=function(){var s=1;return function(){s=(s*16807)%2147483647;return s/2147483647}}();
+    var gauss=function(){return (rng()+rng()+rng()+rng()-2)*1.7};
+    var base=null,low=0,level=0,above=false,lastBeat=0,buf=[],hist=[],thrH=[],beats=[],t=0,bpmOut=0;
+    for(var k=0;k<1000;k++){t+=0.02;var now=t*1000;
+      var v=finger?Math.min((I*(1+mod*Math.sin(2*Math.PI*bpm/60*t)))*R,3.5):Math.min(2e-6*R,3.5);
+      var raw=Math.min(v/CPV,1023)+gauss()*0.12;
+      if(base===null)base=raw;base+=(raw-base)*0.04;var ac=raw-base;low+=(ac-low)*0.5;level=Math.max(Math.abs(low),level*0.99);var thr=Math.max(level*0.5,0.4);
+      var beat=0;
+      if(!above&&low>thr&&now-lastBeat>300){above=true;if(lastBeat){var b=60000/(now-lastBeat);if(b>=40&&b<=200){buf.push(b);if(buf.length>5)buf.shift();bpmOut=buf.reduce(function(a,c){return a+c},0)/buf.length}}lastBeat=now;beat=1}
+      else if(above&&low<thr*0.3)above=false;
+      hist.push(low);thrH.push(thr);beats.push(beat)}
+    var ppC=2*(finger?I:0)*mod*R/CPV;
+    var d=window.devicePixelRatio||1,r=CV.getBoundingClientRect();CV.width=Math.round(r.width*d);CV.height=Math.round(r.height*d);
+    var g=CV.getContext('2d'),w=CV.width,h=CV.height;g.clearRect(0,0,w,h);
+    var cs=getComputedStyle(document.documentElement);var col=function(n){return cs.getPropertyValue(n).trim()};
+    g.strokeStyle=col('--grid');g.lineWidth=d;for(var q=1;q<4;q++){g.beginPath();g.moveTo(0,h*q/4);g.lineTo(w,h*q/4);g.stroke()}
+    var mx=Math.max(3,Math.max.apply(null,hist.map(Math.abs))*1.2);
+    var Y=function(x){return h/2-x/mx*h/2};
+    g.strokeStyle=col('--bad');g.setLineDash([6*d,4*d]);[1,-1].forEach(function(s){g.beginPath();g.moveTo(0,Y(s*thrH[thrH.length-1]));g.lineTo(w,Y(s*thrH[thrH.length-1]));g.stroke()});g.setLineDash([]);
+    g.strokeStyle=col('--grape');g.lineWidth=2.2*d;g.beginPath();hist.forEach(function(v,i){var x=i/999*w;i?g.lineTo(x,Y(v)):g.moveTo(x,Y(v))});g.stroke();
+    g.fillStyle=col('--pink');beats.forEach(function(b,i){if(b){g.beginPath();g.arc(i/999*w,Y(hist[i]),4*d,0,7);g.fill()}});
+    g.fillStyle=col('--muted');g.font=(11*d)+'px sans-serif';g.fillText('สัญญาณหลังกรอง ±'+mx.toFixed(1)+' count · เส้นประ = เกณฑ์',6*d,13*d);
+    var ok=finger&&bpmOut>0&&Math.abs(bpmOut-72)<4;
+    $('res').innerHTML='<div>แรงดันที่ตัวรับ (นิ่ง)<b>'+dcV.toFixed(2)+' V'+(sat?' ⚠':'')+'</b></div><div>ชีพจรแกว่งที่ A0<b>'+ppC.toFixed(1)+' count</b></div><div>โปรแกรมอ่านได้<b>'+(bpmOut>0?Math.round(bpmOut)+' BPM':'—')+'</b></div><div>ผล<b style="color:var(--'+(ok||(!finger&&bpmOut===0)?'good':'bad')+')">'+(!finger?(bpmOut===0?'ไม่มีนิ้ว: ไม่ขึ้น BPM (ถูก)':'ขึ้น BPM ผิด!'):(ok?'จับชีพจรได้':(sat?'ตัวรับชนเพดาน ลด R โหลด':'สัญญาณเล็กไป เพิ่ม R โหลด/ชิดนิ้ว')))+'</b></div>';
+  }
+  ['i','m','r','f'].forEach(function(id){$(id).addEventListener('input',sim);$(id).addEventListener('change',sim)});
+  window.addEventListener('resize',sim);sim();
+})();
+</script>
