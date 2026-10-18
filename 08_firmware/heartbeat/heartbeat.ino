@@ -34,7 +34,7 @@ const uint8_t PIN_SIG = A0;
 const uint8_t PIN_IR = 9;
 const uint8_t PIN_BEAT = LED_BUILTIN;   // on-board LED (D13)
 
-const uint16_t SAMPLE_MS = 10;       // 100 Hz
+const uint16_t SAMPLE_MS = 20;       // 50 Hz sample rate = one mains cycle
 const uint16_t REFRACTORY_MS = 300;  // max 200 BPM
 const uint16_t TIMEOUT_MS = 3000;    // no beat -> finger off
 const uint8_t AVG_N = 5;
@@ -62,17 +62,18 @@ void setup() {
 void loop() {
   if (Serial.available() && Serial.read() == 'p') plotMode = !plotMode;
 
+  // one sample = mean of ADC reads over exactly one 50 Hz mains cycle (20 ms): cancels mains hum
+  long sum = 0; uint16_t n = 0;
+  unsigned long t0 = micros();
+  while (micros() - t0 < (unsigned long)SAMPLE_MS * 1000UL) { sum += analogRead(PIN_SIG); n++; }
   unsigned long now = millis();
-  if (now - lastSample < SAMPLE_MS) return;
-  lastSample = now;
-
-  int raw = analogRead(PIN_SIG);
-  baseline += (raw - baseline) * 0.02;            // slow DC tracker
+  float raw = (float)sum / n;
+  baseline += (raw - baseline) * 0.04;            // slow DC tracker
   float ac = raw - baseline;
-  lowpass += (ac - lowpass) * 0.3;                // light smoothing
-  level = max(fabs(lowpass), level * 0.995f);     // decaying amplitude
+  lowpass += (ac - lowpass) * 0.5;                // light smoothing
+  level = max(fabs(lowpass), level * 0.99f);      // decaying amplitude
 
-  float thr = max(level * 0.5f, 6.0f);            // ignore noise < ~6 counts
+  float thr = max(level * 0.5f, 3.0f);            // ignore noise < ~3 counts
   if (plotMode) {
     Serial.print(lowpass); Serial.print(','); Serial.print(thr); Serial.print(','); Serial.println(-thr);
   }

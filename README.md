@@ -2,9 +2,9 @@
 
 Mini-project 1/2026 — วัดชีพจรด้วยแสงอินฟราเรด (IR LED + phototransistor → LM358 → Arduino A0) ใช้เฉพาะอุปกรณ์ในกล่องยืม
 
-> สถานะ: ออกแบบ จำลอง (ngspice) และทำรูป/เว็บจำลองแล้ว **ยังไม่ได้ต่อและวัดกับของจริง**
+> สถานะ (2026-10-18): ต่อวงจรจริงบน breadboard แล้ว ไฟ/Vref/ตัวขยาย/ตัวกรอง/วงจรส่งแสงทำงานตามที่วัดได้ **ยังไม่ได้ยืนยันสัญญาณชีพจรจริง** ดูบันทึกใน `08_firmware/BRINGUP.md`
 
-- `08_firmware/` — โค้ด Arduino (Leonardo/UNO) และตารางต่อสาย `README_wiring.md`
+- `08_firmware/` — โค้ด Arduino (Leonardo/UNO), ตารางต่อสาย `README_wiring.md`, บันทึกการทดสอบจริง `BRINGUP.md`, โปรแกรมวินิจฉัย `diag/` `d9test/` และกราฟสด `live_plot.py`
 - `07_pcb/kicad/` — สคีแมติก KiCad (ERC ผ่าน ไม่มี error) พร้อม netlist และ BOM
 - `10_manual/` — รูปต่อ breadboard ทีละขั้น (`step1-7.png`), สคีแมติก, ผลจำลอง และสคริปต์ที่สร้างรูปทั้งหมด
 - `02_design/model.py`, `04_print_stl/`, `06_cad_export/` — เคส (ฐาน + ฝา) สร้างจาก Fusion 360
