@@ -124,11 +124,11 @@ OP = {'GND': (37, 32.0), 'VCC': (37, 33.4), 'SCL': (37, 34.8), 'SDA': (37, 36.2)
 for n, (x, y) in OP.items(): ax.add_patch(Rectangle((x-.3, y-.3), .6, .6, fc='#e0c040', ec='#000', lw=.5, zorder=5)); ax.text(x+.5, y, n, fontsize=6.5, va='center', color='#fff', zorder=5)
 
 # ---- sensor group (on the case lid): phototransistor + IR LED
-ax.text(49, 25.8, 'ชุดเซนเซอร์ที่ฝาเคส', fontsize=9, ha='center', color='#444', fontweight='bold')
+ax.text(49, 26.2, 'ชุดเซนเซอร์ติดคู่กันที่ฝาเคส (ห่าง ~11 มม. หันขึ้นหานิ้ว)', fontsize=9, ha='center', color='#444', fontweight='bold')
 def led(x, y, body, name):
     ax.add_patch(Wedge((x, y + 1.1), 1.05, 0, 180, fc=body, ec='#222', lw=1.4, zorder=8)); ax.add_patch(Rectangle((x-1.05, y), 2.1, 1.1, fc=body, ec='#222', lw=1.4, zorder=8)); ax.add_patch(Rectangle((x-1.25, y-.1), 2.5, .22, fc=body, ec='#222', zorder=8))
     ax.text(x, y + 2.9, name, ha='center', fontsize=8, color='#222', fontweight='bold')
-SENS = {'IR': (46, 20.8), 'PT': (52, 20.8)}
+SENS = {'IR': (51.3, 20.8), 'PT': (46.7, 20.8)}
 led(*SENS['IR'], '#ececec', 'IR LED'); led(*SENS['PT'], '#2a2a2a', 'Phototransistor')
 sp = {'IR_A': (SENS['IR'][0] - .45, SENS['IR'][1]), 'IR_K': (SENS['IR'][0] + .45, SENS['IR'][1]), 'PT_C': (SENS['PT'][0] - .45, SENS['PT'][1]), 'PT_E': (SENS['PT'][0] + .45, SENS['PT'][1])}
 def hole(c, r): return H(c, r)

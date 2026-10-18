@@ -185,19 +185,23 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
   D.ports.forEach(function(p){if(!PM[p.id])return;var h=P(p.hole[0],p.hole[1]),a=pinsA[PM[p.id][0]].clone(),mid=a.clone().lerp(h,.5);mid.y=26+(p.id==='f4'?4:0)+(p.id==='f5'?7:0);
     var w=tube([a,new T.Vector3(a.x,14,a.z),mid,new T.Vector3(h.x,14,h.z),new T.Vector3(h.x,3.5,h.z),h],.6,PM[p.id][1],'สายไป Arduino '+PM[p.id][0]);all.add(w)});
   // ---- sensors (on the case lid): phototransistor + IR LED with long leads
-  function sensor(idA,idB,body,name,clear){
+  var SX3=P(27,'a').x, SZ=P(1,'T5V').z-9;
+  function sensor(idA,idB,body,name,clear,sx){
     var pa=D.ports.filter(function(q){return q.id===idA})[0],pb=D.ports.filter(function(q){return q.id===idB})[0];
     var a=P(pa.hole[0],pa.hole[1]),b=P(pb.hole[0],pb.hole[1]);
-    var cx=(a.x+b.x)/2,cz=Math.min(a.z,b.z)-4;
+    var cx=sx,cz=SZ;
     var g=new T.Group();
     var cyl=new T.Mesh(new T.CylinderGeometry(2.5,2.5,6,28),M(body,{roughness:.2,transparent:!!clear,opacity:clear?.6:1}));cyl.position.set(cx,24,cz);g.add(cyl);
     var dome=new T.Mesh(new T.SphereGeometry(2.5,28,14,0,Math.PI*2,0,Math.PI/2),M(body,{roughness:.15,transparent:!!clear,opacity:clear?.6:1}));dome.position.set(cx,27,cz);g.add(dome);
     var rim=new T.Mesh(new T.CylinderGeometry(3,3,.8,28),M(body,{transparent:!!clear,opacity:clear?.6:1}));rim.position.set(cx,21.2,cz);g.add(rim);
-    [[a,-.6],[b,.6]].forEach(function(e){g.add(tube([e[0],new T.Vector3(e[0].x,6,e[0].z),new T.Vector3(cx+e[1],14,cz),new T.Vector3(cx+e[1],21,cz)],.3,0xc4c4cc,name))});
-    all.add(tag(g,name));labelSprite(name,new T.Vector3(cx,33,cz),'#444');return new T.Vector3(cx,24,cz)}
-  var sPT=sensor('f1','f0',0x222222,'Phototransistor 5mm 940nm (หัวดำ) · ใบยืม 4',false);
-  var sIR=sensor('f6','f7',0xeeeeee,'IR LED 5mm 940nm (หัวใส) · ใบยืม 5',true);
+    [[a,-.9],[b,.9]].forEach(function(e){g.add(tube([e[0],new T.Vector3(e[0].x,8,e[0].z),new T.Vector3(cx+e[1],16,cz),new T.Vector3(cx+e[1],21,cz)],.3,0xc4c4cc,name))});
+    all.add(tag(g,name));labelSprite(name.split(' ·')[0],new T.Vector3(cx,35,cz),'#444');return new T.Vector3(cx,24,cz)}
+  var sPT=sensor('f1','f0',0x222222,'Phototransistor 5mm 940nm (หัวดำ) · ใบยืม 4',false,SX3-5.5);
+  var sIR=sensor('f6','f7',0xeeeeee,'IR LED 5mm 940nm (หัวใส) · ใบยืม 5',true,SX3+5.5);
 
+  var bar=new T.Mesh(new T.BoxGeometry(.9,9,7),M(0x111111));bar.position.set(SX3,24,SZ);all.add(tag(bar,'ผนังกันแสงระหว่างตัวส่งกับตัวรับ'));
+  var pad=new T.Mesh(new T.BoxGeometry(24,1.4,13),M(0xf6c9a8,{transparent:true,opacity:.55,roughness:.7}));pad.position.set(SX3,32.5,SZ);all.add(tag(pad,'ตำแหน่งวางนิ้ว (ทับตัวส่งและตัวรับพร้อมกัน)'));
+  labelSprite('วางนิ้วตรงนี้',new T.Vector3(SX3,39,SZ),'#a05a2c');
   // ---- camera control (orbit)
   var tgt=new T.Vector3(0,3,0),sph={r:230,th:.9,ph:.75},autoSpin=false;
   function setCam(){var s=Math.sin(sph.ph),c=Math.cos(sph.ph);cam.position.set(tgt.x+sph.r*s*Math.sin(sph.th),tgt.y+sph.r*c,tgt.z+sph.r*s*Math.cos(sph.th));cam.lookAt(tgt)}
@@ -207,7 +211,7 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
   $('vIso').addEventListener('click',function(){goto(.5,.95,230,new T.Vector3(0,3,-8),'vIso')});
   $('vTop').addEventListener('click',function(){goto(0,.08,190,new T.Vector3(0,0,-8),'vTop')});
   $('vFront').addEventListener('click',function(){goto(0,1.38,170,new T.Vector3(0,6,0),'vFront')});
-  $('vSens').addEventListener('click',function(){goto(.2,1.0,130,new T.Vector3(sPT.x*.4+sIR.x*.6-10,12,-6),'vSens')});
+  $('vSens').addEventListener('click',function(){goto(.25,1.0,95,new T.Vector3(SX3,26,SZ),'vSens')});
   $('vSpin').addEventListener('click',function(){autoSpin=!autoSpin;$('vSpin').textContent='หมุนเอง: '+(autoSpin?'เปิด':'ปิด');$('vSpin').className=autoSpin?'on':''});
   var drag=null,pinch=null;
   cv.addEventListener('pointerdown',function(e){cv.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,btn:e.button,pan:e.button===2||e.shiftKey};view=null});

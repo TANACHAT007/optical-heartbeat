@@ -98,7 +98,7 @@ canvas{width:100%;height:130px;display:block;background:var(--scope);border-radi
     <div class="hintbar" id="hint" style="margin-top:10px">เลือกชิ้นส่วนจากแถบด้านบนเพื่อเริ่ม</div>
   </section>
 
-  <div class="boardwrap"><div style="position:relative;width:1320px;height:520px"><svg id="bb" width="1320" height="520" viewBox="0 0 1320 520" role="img" aria-label="เบรดบอร์ดพร้อมกระแสไฟที่วิ่งอยู่"></svg><canvas id="flow" width="1320" height="520" style="position:absolute;left:0;top:0;width:1320px;height:520px;pointer-events:none;border:0;border-radius:0;background:transparent"></canvas></div></div>
+  <div class="boardwrap"><div style="position:relative;width:1320px;height:550px"><svg id="bb" width="1320" height="550" viewBox="0 0 1320 550" role="img" aria-label="เบรดบอร์ดพร้อมกระแสไฟที่วิ่งอยู่"></svg><canvas id="flow" width="1320" height="550" style="position:absolute;left:0;top:0;width:1320px;height:550px;pointer-events:none;border:0;border-radius:0;background:transparent"></canvas></div></div>
 
   <div class="cols">
     <section class="card">
@@ -152,7 +152,7 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
 
   // ---------- SVG helpers
   function el(n,a,p){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
-  var svg=null, gBoard, gParts, gWires, gHit, OY=70;
+  var svg=null, gBoard, gParts, gWires, gHit, OY=100;
   function drawBoard(){
     $('bb').innerHTML='';svg=el('g',{transform:'translate(0,'+OY+')'},$('bb'));
     el('rect',{x:8,y:2,width:1304,height:440,rx:18,fill:'var(--board)',stroke:'var(--boardline)','stroke-width':2},svg);
@@ -289,12 +289,18 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
         var tt=el('text',{x:x,y:y+4.5,'text-anchor':'middle','font-size':sn.length>1?9:13,'font-weight':800,fill:'#fff'},gParts);tt.textContent=sn})});
     function has2(a,b){return placed.some(function(q){return q.id===a})&&placed.some(function(q){return q.id===b})}
     function hp(id){return placed.filter(function(q){return q.id===id})[0].holes[0]}
-    function sensor(idA,idB,fill,stroke,name){var pa=hp(idA),pb=hp(idB),bx=(hx(pa[0])+hx(pb[0]))/2;
-      [pa,pb].forEach(function(q){el('line',{x1:hx(q[0]),y1:hy(q[1]),x2:hx(q[0]),y2:-46,stroke:'#999','stroke-width':3},gParts)});
+    var SX=hx(27),PTX=SX-52,IRX=SX+52;
+    function sensor(idA,idB,fill,stroke,name,bx){var pa=hp(idA),pb=hp(idB);
+      [[pa,bx-8],[pb,bx+8]].forEach(function(e){var q=e[0];el('path',{d:'M'+hx(q[0])+' '+hy(q[1])+' L'+hx(q[0])+' -18 L'+e[1]+' -34 L'+e[1]+' -44',fill:'none',stroke:'#999','stroke-width':3,'stroke-linejoin':'round'},gParts)});
       el('path',{d:'M'+(bx-16)+' -44 A16 16 0 0 1 '+(bx+16)+' -44 Z',fill:fill,stroke:stroke},gParts);
-      var tt=el('text',{x:bx,y:-64,'text-anchor':'middle','font-size':11,'font-weight':700,fill:'var(--fg)'},gParts);tt.textContent=name}
-    if(has2('f0','f1'))sensor('f1','f0','#222','#000','Phototransistor (ตัวรับแสง)');
-    if(has2('f6','f7'))sensor('f6','f7','#eee','#555','IR LED (ส่งแสง)');
+      var tt=el('text',{x:bx,y:-62,'text-anchor':'middle','font-size':11,'font-weight':700,fill:'var(--fg)'},gParts);tt.textContent=name}
+    if(has2('f0','f1')||has2('f6','f7')){
+      el('rect',{x:SX-2,y:-50,width:4,height:22,rx:1,fill:'#222'},gParts);
+      el('ellipse',{cx:SX,cy:-84,rx:96,ry:11,fill:'#f6c9a8',stroke:'#c98f6b','stroke-width':1.5,opacity:.9},gParts);
+      var ft=el('text',{x:SX,y:-80,'text-anchor':'middle','font-size':11.5,'font-weight':700,fill:'#7a4a2a'},gParts);ft.textContent='นิ้ววางตรงนี้ (ทับทั้งสองตัว)';
+      var bt=el('text',{x:SX,y:-34,'text-anchor':'middle','font-size':9,fill:'var(--muted)'},gParts);bt.textContent='ผนังกันแสง'}
+    if(has2('f0','f1'))sensor('f1','f0','#222','#000','Phototransistor (ตัวรับ)',PTX);
+    if(has2('f6','f7'))sensor('f6','f7','#eee','#555','IR LED (ตัวส่ง)',IRX);
     // pending marks
     pending.forEach(function(h){el('circle',{cx:hx(h[0]),cy:hy(h[1]),r:8,fill:'none',stroke:'var(--pink)','stroke-width':3},gParts)});
     if(hintHoles)hintHoles.forEach(function(h){var c=el('circle',{cx:hx(h[0]),cy:hy(h[1]),r:9,fill:'none',stroke:'var(--sun)','stroke-width':3.5},gParts);c.setAttribute('stroke-dasharray','4 3')});
@@ -330,7 +336,8 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
       if(st===-1){tool=null;html=head+'<br><span class="bad">'+p.label+' วางผิดตำแหน่ง</span> ให้อยู่ที่วงกลมเหลือง กด "ลบ" แล้วคลิกชิ้นนั้นเพื่อลบ จากนั้นวางใหม่ (หรือกด "ข้ามขั้นนี้")'}
       else{tool={type:'part',id:it.id};
         var where=p.kind==='ic'?'ขา 1 ที่ '+hnm(hs[0])+' (รอยบากหันซ้าย ตัว IC คร่อมร่องกลาง)':p.kind==='npn'?'ขา C ที่ '+hnm(hs[0])+' (หน้าแบนหันหาตัวเรา เรียง C-B-E ไปทางขวา)':p.kind==='vr'?'ขา 1 ที่ '+hnm(hs[0])+' (ขาห่างกัน 2 รู)':(p.signs?p.signs.map(function(sn,i){return '<br>ขา '+sg(sn)+' '+p.snote[i]+' → <b>'+hnm(hs[i])+'</b>'}).join(''):hs.map(hnm).join(' และ '));
-        html=head+'<br>วาง <b>'+p.label+'</b>'+(p.code?' · รหัสบนตัว <b>'+p.code+'</b> '+sw(p):'')+'<br>'+where+' <span style="color:var(--muted)">(คลิกที่วงกลมเหลืองบนบอร์ด)</span>'}}
+        var pairNote=(['f0','f1','f6','f7'].indexOf(it.id)>=0)?'<br><span class="mid">ตัวส่ง (IR LED) และตัวรับ (phototransistor) ต้องติดคู่กันที่ฝา ห่างกันราว 11 มม. หันหัวขึ้นไปทางนิ้วเหมือนกัน มีผนังกันแสงคั่นกลาง ขายาวต่อสายมาเสียบรูตามวงกลมเหลือง</span>':'';
+        html=head+pairNote+'<br>วาง <b>'+p.label+'</b>'+(p.code?' · รหัสบนตัว <b>'+p.code+'</b> '+sw(p):'')+'<br>'+where+' <span style="color:var(--muted)">(คลิกที่วงกลมเหลืองบนบอร์ด)</span>'}}
     else{var nm=it.w[2],col={'5V':0,GND:1,VREF:2}[nm],cname={'5V':'แดง','GND':'ดำ',VREF:'เขียว'}[nm]||'สีไหนก็ได้';
       tool={type:'wire'};wireColor=col===undefined?3:col;hintHoles=[it.w[0],it.w[1]];
       html=head+'<br>ต่อ <b>สาย'+cname+'</b> จาก '+hnm(it.w[0])+' ไป '+hnm(it.w[1])+' <span style="color:var(--muted)">(คลิกวงกลมเหลืองสองจุด)</span>'}
@@ -491,7 +498,7 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
     for(var k=0;k<=12;k++){var t=k/12,u=1-t;o.push([u*u*x0+2*u*t*mx+t*t*x1,u*u*y0+2*u*t*my+t*t*y1])}return o}
   var BR=[
     {n:'กระแสแสงที่ตัวรับ (5V → โหนดตัวรับ)',c:'#ffb81c',g:1,f:function(){return SIM.ipt||0},
-     p:[P(12,'T5V'),[hx(12),-46],[hx(14),-46],P(14,'g')]},
+     p:[P(12,'T5V'),[hx(12),-18],[hx(27)-60,-34],[hx(27)-60,-44],[hx(27)-44,-44],[hx(27)-44,-34],[hx(14),-18],P(14,'g')]},
     {n:'ลงกราวด์ผ่าน R10k',c:'#ff8a3d',g:1,f:function(){return (SIM.vpt||0)/RLOAD},p:[P(14,'g'),P(14,'j'),P(15,'BGND')]},
     {n:'ผ่าน 10µF → R100k → Vref (แกว่งตามชีพจร, ขยายภาพ ×200)',c:'#ff5d8f',g:200,f:function(){return SIM.ib||0},
      p:[P(14,'g'),P(14,'h'),P(20,'h'),P(20,'i'),P(17,'i'),P(17,'j')].concat(wp([17,'j'],[17,'TVREF']))},
@@ -502,7 +509,7 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
     {n:'ตัวกรองสุดท้าย R100k → C470nF (ขยายภาพ ×200)',c:'#8b5cf6',g:200,f:function(){return ((SIM.oa||0)-(SIM.y||0))/RLP},
      p:[P(24,'j'),P(28,'j'),P(28,'i'),P(29,'BGND')]},
     {n:'IR LED (R220 → LED → Q1 → GND)',c:'#ef4444',g:1,f:function(){return 0.016},
-     p:[P(41,'T5V'),P(44,'a'),P(44,'b'),[hx(44),-46],[hx(38),-46],P(38,'i'),P(38,'h'),P(40,'h'),P(40,'j')].concat(wp([40,'j'],[40,'BGND']))},
+     p:[P(41,'T5V'),P(44,'a'),P(44,'b'),[hx(44),-18],[hx(27)+44,-34],[hx(27)+44,-44],[hx(27)+60,-44],[hx(27)+60,-34],[hx(38),-18],P(38,'i'),P(38,'h'),P(40,'h'),P(40,'j')].concat(wp([40,'j'],[40,'BGND']))},
     {n:'กระแสฐาน Q1 (D9 → R1k → B)',c:'#f59e0b',g:1,f:function(){return 0.0043},p:[P(43,'g'),P(43,'i'),P(39,'i'),P(39,'h')]},
     {n:'ไฟเลี้ยง LM358 (5V → ขา 8 → ขา 4 → GND)',c:'#7ad36b',g:1,f:function(){return 0.0007},
      p:wp([24,'T5V'],[24,'a']).concat([P(24,'e'),P(27,'f'),P(27,'g')],wp([27,'g'],[27,'BGND']))}

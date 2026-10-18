@@ -19,6 +19,9 @@ LED บอกชีพจร = LED บนบอร์ด Arduino (D13) ไม่
 | IR LED | 5V → R220 → IR LED(A→K) → Q1 collector · Q1 emitter→GND · D9 → R1k → Q1 base |
 | จอ OLED (เลือกต่อ) | GND, VCC→5V, SDA→D2, SCL→D3 (Leonardo) |
 
+## เซนเซอร์ต้องติดคู่กัน
+IR LED (ส่ง) และ phototransistor (รับ) ต้องอยู่ติดกันที่ฝาเคส ห่างประมาณ 11 มม. หันหัวขึ้นไปทางเดียวกัน มีผนังกันแสงคั่นกลาง (แบบเคสทำไว้แล้ว) แล้วนิ้วทาบทับทั้งสองตัว สายยาวต่อกลับมาเสียบรูบน breadboard ตามตาราง ไม่ได้ติดบน breadboard
+
 ## อุปกรณ์ที่ใช้
 LM358×1 · BC548×1 · IR LED×1 · Phototransistor×1 · R220×1 · R1k×1 · R2.4k×1 · R10k×3 · R100k×2 · VR100k×1 · C10nF×1 · C100nF×1 · C470nF×1 · C10µF×2 · C100µF×1
 
