@@ -3,7 +3,7 @@
 //   DIFF > 20   -> the receiver sees the IR LED  (good)
 //   DIFF < 3    -> receiver does not see the LED (check wiring/polarity/aim)
 // 1 = BC558 (PNP: D9 LOW = LED on), 0 = BC548 (NPN: D9 HIGH = LED on)
-#define PNP_DRIVER 1
+#define PNP_DRIVER 0
 const uint8_t IR_ON = PNP_DRIVER ? LOW : HIGH, IR_OFF = PNP_DRIVER ? HIGH : LOW;
 void setup() {
   pinMode(9, OUTPUT);
