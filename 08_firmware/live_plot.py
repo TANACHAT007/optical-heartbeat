@@ -5,7 +5,8 @@ matplotlib.use('MacOSX')
 import matplotlib.pyplot as plt
 from matplotlib import font_manager as fm
 fm.fontManager.addfont('/System/Library/Fonts/Supplemental/Thonburi.ttc'); plt.rcParams['font.family'] = ['Thonburi', 'DejaVu Sans']
-PORT = sys.argv[1] if len(sys.argv) > 1 else '/dev/cu.usbmodem11301'
+import glob
+PORT = sys.argv[1] if len(sys.argv) > 1 else (glob.glob('/dev/cu.usbmodem*') + glob.glob('/dev/cu.usbserial*'))[0]
 ser = serial.Serial(PORT, 115200, timeout=0.05); time.sleep(1.5); ser.reset_input_buffer(); ser.write(b'p')   # 'p' = plot mode
 N = 600; sig = collections.deque([0] * N, N); thr = collections.deque([0] * N, N); nthr = collections.deque([0] * N, N)
 fig, ax = plt.subplots(figsize=(11, 5)); fig.canvas.manager.set_window_title('Optical Heartbeat - live signal')
@@ -23,7 +24,7 @@ def upd():
             sig.append(a); thr.append(b); nthr.append(c)
         except Exception: pass
     l1.set_ydata(sig); l2.set_ydata(thr); ax.lines[2].set_ydata(nthr)
-    m = max(30, max(abs(v) for v in sig) * 1.3); ax.set_ylim(-m, m)
+    m = max(4, max(abs(v) for v in sig) * 1.3); ax.set_ylim(-m, m)
     ttl.set_text('แกว่ง ±%d count · เกณฑ์ ±%d' % (max(abs(v) for v in sig), thr[-1]))
 plt.ion(); plt.show(block=False)
 try:
