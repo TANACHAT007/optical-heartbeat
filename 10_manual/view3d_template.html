@@ -160,6 +160,11 @@ var D = /*DATA*/;
     var wire=tube([a,new T.Vector3(a.x,3.5,a.z),m1,m2,new T.Vector3(b.x,3.5,b.z),b],.6,col,'สายจั๊มเปอร์ ('+(w[2]==='VREF'?'Vref':w[2])+')');all.add(wire);
     [a,b].forEach(function(e){var pin=new T.Mesh(new T.CylinderGeometry(.55,.55,2.4,12),M(0x444444));pin.position.set(e.x,1.2,e.z);all.add(tag(pin,'ปลายสาย'))})});
 
+  function signSprite(txt,pos,col){var cvs=document.createElement('canvas');cvs.width=64;cvs.height=64;var g=cvs.getContext('2d');g.fillStyle=col;g.beginPath();g.arc(32,32,28,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=5;g.stroke();g.fillStyle='#fff';g.font='700 '+(txt.length>1?26:44)+'px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,32,34);
+    var sp=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cvs),transparent:true,depthTest:false}));sp.scale.set(4.6,4.6,1);sp.position.copy(pos);sp.renderOrder=10;all.add(sp)}
+  function signs3d(p,holes){if(!p.signs)return;holes.forEach(function(h,i){var sn=p.signs[i];if(!sn)return;signSprite(sn,h.clone().add(new T.Vector3(0,10,-2.5)),sn==='+'?'#e02020':sn==='−'?'#2c5fd6':'#555')})}
+  D.parts.forEach(function(p){signs3d(p,p.pins.map(function(q){return P(q[0],q[1])}))});
+  D.ports.forEach(function(p){if(p.signs)signs3d(p,[P(p.hole[0],p.hole[1])])});
   // ---- Arduino Leonardo (behind the breadboard) with a pin header
   var ard=new T.Group(),AW=68.6,AH=53.3,az=ROWY.T5V*K-ZC-AH/2-26;
   var pcb=new T.Mesh(new T.BoxGeometry(AW,1.6,AH),M(0x0f6c8c,{roughness:.5}));pcb.position.set(-XC+AW/2+6,.8,az);ard.add(pcb);
@@ -227,8 +232,9 @@ var D = /*DATA*/;
   
   var BANDHEX={brown:'#7a4b1b',black:'#111',orange:'#f08000',red:'#dd1111',yellow:'#e8d000',gold:'#c9a227'};
   function sw(p){return p.bands?p.bands.map(function(b){return '<span class="swatch" style="display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:'+BANDHEX[b]+'"></span>'}).join(''):''}
-  function fillTable(id){var rows=D.parts.concat(D.ports.filter(function(p){return p.code})).map(function(p){return '<tr><td>'+p.label+'</td><td>'+(p.code||'—')+' '+sw(p)+'</td><td>'+(p.no?'No.'+p.no:'—')+'</td></tr>'}).join('');
-    document.getElementById(id).innerHTML='<thead><tr><th>ชิ้นส่วน</th><th>รหัสบนตัว / แถบสี</th><th>ใบยืม</th></tr></thead><tbody>'+rows+'</tbody>'}
+  function fillTable(id){var rows=D.parts.concat(D.ports.filter(function(p){return p.code})).map(function(p){return '<tr><td>'+p.label+'</td><td>'+(p.code||'—')+' '+sw(p)+'</td><td>'+(p.signs?p.signs.map(function(sn,i){return sg(sn)+' '+p.snote[i]}).join('<br>'):'—')+'</td><td>'+(p.no?'No.'+p.no:'—')+'</td></tr>'}).join('');
+    document.getElementById(id).innerHTML='<thead><tr><th>ชิ้นส่วน</th><th>รหัสบนตัว / แถบสี</th><th>ขั้ว / ขา</th><th>ใบยืม</th></tr></thead><tbody>'+rows+'</tbody>'}
+  function sg(s){return '<b style="display:inline-block;min-width:22px;text-align:center;border-radius:99px;padding:0 6px;color:#fff;background:'+(s==='+'?'#e02020':s==='−'?'#2c5fd6':'#777')+'">'+s+'</b>'}
   
   fillTable('ptab');
   var LG=[['#e02020','สาย/ขา 5V'],['#202020','สาย/ขา GND'],['#1ea03c','สาย Vref 2.5V'],['#8a3fb0','สายหลังตัวเก็บประจุ (X)'],['#2f6fe0','สายสัญญาณ'],['#2a3550','ตัวเก็บประจุอิเล็กโทรไลติก (แถบขาว = ขา −)'],['#e3c79a','ตัวต้านทาน (แถบสีบอกค่า)'],['#3a78c8','VR100k (ตัวหมุน)']];

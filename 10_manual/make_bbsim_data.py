@@ -22,5 +22,11 @@ for i, p in enumerate(out['parts']): p.update(CODES[i])
 PC={'f0':('Phototransistor 5mm 940nm (หัวดำ)',4),'f1':('Phototransistor 5mm 940nm (หัวดำ)',4),'f6':('IR LED 5mm 940nm (หัวใส)',5),'f7':('IR LED 5mm 940nm (หัวใส)',5)}
 for p in out['ports']:
     if p['id'] in PC: p['code'], p['no'] = PC[p['id']]
+SIGNS={'p2':(['+','−'],['ขายาว','ขาใต้แถบขาว/ขีด −']),'p9':(['+','−'],['ขายาว','ขาใต้แถบขาว/ขีด −']),'p13':(['+','−'],['ขายาว','ขาใต้แถบขาว/ขีด −']),
+ 'p14':(['C','B','E'],['ซ้าย (หน้าแบนหันหาตัวเรา)','กลาง','ขวา']),
+ 'f6':(['+'],['ขายาว (A แอโนด)']),'f7':(['−'],['ขาสั้น (K แคโทด)']),'f1':(['C'],['ขายาว (collector) ต่อ 5V']),'f0':(['E'],['ขาสั้น (emitter) ต่อโหนดตัวรับ'])}
+for grp in (out['parts'], out['ports']):
+    for p in grp:
+        if p['id'] in SIGNS: p['signs'], p['snote'] = SIGNS[p['id']]
 json.dump(out, open('/Users/tanachat.s/fusion-projects/optical-heartbeat/10_manual/bbsim_data.json', 'w'), ensure_ascii=False)
 print(len(out['parts']), len(out['wires']), len(out['ports']))

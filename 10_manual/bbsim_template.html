@@ -281,6 +281,11 @@ var D = /*DATA*/;
         el('circle',{cx:H[1][0],cy:H[0][1]-29,r:11,fill:'#d9c36a',stroke:'#7a6a1a'},g);H.forEach(function(h){el('line',{x1:h[0],y1:h[1],x2:h[0],y2:h[1]-12,stroke:'#aaa','stroke-width':3},g)});
         var t3=el('text',{x:H[1][0],y:H[0][1]-52,'text-anchor':'middle','font-size':10,'font-weight':700,fill:'var(--fg)'},g);t3.textContent='VR 100k';return}
     });
+    placed.forEach(function(p){if(p.t==='wire')return;var dd=partById[p.id];if(!dd||!dd.signs)return;
+      p.holes.forEach(function(h,i){var sn=dd.signs[i];if(!sn)return;var x=hx(h[0]),y=hy(h[1])+(h[1]==='e'||h[1]==='d'?-17:-17);
+        var col=sn==='+'?'#e02020':sn==='−'?'#2c5fd6':'#555';
+        el('circle',{cx:x,cy:y,r:9,fill:col,stroke:'#fff','stroke-width':2},gParts);
+        var tt=el('text',{x:x,y:y+4.5,'text-anchor':'middle','font-size':sn.length>1?9:13,'font-weight':800,fill:'#fff'},gParts);tt.textContent=sn})});
     function has2(a,b){return placed.some(function(q){return q.id===a})&&placed.some(function(q){return q.id===b})}
     function hp(id){return placed.filter(function(q){return q.id===id})[0].holes[0]}
     function sensor(idA,idB,fill,stroke,name){var pa=hp(idA),pb=hp(idB),bx=(hx(pa[0])+hx(pb[0]))/2;
@@ -298,6 +303,7 @@ var D = /*DATA*/;
 
   // ---------- guided mode
   var BANDHEX={brown:'#7a4b1b',black:'#111',orange:'#f08000',red:'#dd1111',yellow:'#e8d000',gold:'#c9a227'};
+  function sg(s){return '<b style="display:inline-block;min-width:22px;text-align:center;border-radius:99px;padding:0 6px;color:#fff;background:'+(s==='+'?'#e02020':s==='−'?'#2c5fd6':'#777')+'">'+s+'</b>'}
   function sw(p){return p.bands?p.bands.map(function(b){return '<span class="swatch" style="background:'+BANDHEX[b]+'"></span>'}).join(''):''}
   var RN={T5V:'แถบ 5V (บนสุด)',TVREF:'แถบ Vref (ที่สอง)',BGND:'แถบ GND (ล่าง)',BX:'แถบล่างสุด'};
   function hnm(h){return RAILS.indexOf(h[1])>=0?RN[h[1]]+' คอลัมน์ '+h[0]:'คอลัมน์ '+h[0]+' แถว '+h[1]}
@@ -322,7 +328,7 @@ var D = /*DATA*/;
     if(it.k==='part'){var p=partById[it.id],hs=expHoles(it.id);hintHoles=hs;
       if(st===-1){tool=null;html=head+'<br><span class="bad">'+p.label+' วางผิดตำแหน่ง</span> ให้อยู่ที่วงกลมเหลือง กด "ลบ" แล้วคลิกชิ้นนั้นเพื่อลบ จากนั้นวางใหม่ (หรือกด "ข้ามขั้นนี้")'}
       else{tool={type:'part',id:it.id};
-        var where=p.kind==='ic'?'ขา 1 ที่ '+hnm(hs[0])+' (รอยบากหันซ้าย ตัว IC คร่อมร่องกลาง)':p.kind==='npn'?'ขา C ที่ '+hnm(hs[0])+' (หน้าแบนหันหาตัวเรา เรียง C-B-E ไปทางขวา)':p.kind==='vr'?'ขา 1 ที่ '+hnm(hs[0])+' (ขาห่างกัน 2 รู)':(p.roles?p.roles.map(function(r,i){return r+' → '+hnm(hs[i])}).join(' · '):hs.map(hnm).join(' และ '));
+        var where=p.kind==='ic'?'ขา 1 ที่ '+hnm(hs[0])+' (รอยบากหันซ้าย ตัว IC คร่อมร่องกลาง)':p.kind==='npn'?'ขา C ที่ '+hnm(hs[0])+' (หน้าแบนหันหาตัวเรา เรียง C-B-E ไปทางขวา)':p.kind==='vr'?'ขา 1 ที่ '+hnm(hs[0])+' (ขาห่างกัน 2 รู)':(p.signs?p.signs.map(function(sn,i){return '<br>ขา '+sg(sn)+' '+p.snote[i]+' → <b>'+hnm(hs[i])+'</b>'}).join(''):hs.map(hnm).join(' และ '));
         html=head+'<br>วาง <b>'+p.label+'</b>'+(p.code?' · รหัสบนตัว <b>'+p.code+'</b> '+sw(p):'')+'<br>'+where+' <span style="color:var(--muted)">(คลิกที่วงกลมเหลืองบนบอร์ด)</span>'}}
     else{var nm=it.w[2],col={'5V':0,GND:1,VREF:2}[nm],cname={'5V':'แดง','GND':'ดำ',VREF:'เขียว'}[nm]||'สีไหนก็ได้';
       tool={type:'wire'};wireColor=col===undefined?3:col;hintHoles=[it.w[0],it.w[1]];
@@ -333,8 +339,8 @@ var D = /*DATA*/;
   $('bSkip').addEventListener('click',function(){guide.i++;pending=[];render()});
   function ptable(){
     var rows=D.parts.concat(D.ports.filter(function(p){return p.code})).map(function(p){var on=placed.some(function(q){return q.id===p.id});
-      return '<tr><td>'+p.label+'</td><td>'+(p.code||'—')+' '+sw(p)+'</td><td>'+(p.no?'No.'+p.no:'—')+'</td><td style="color:'+(on?'var(--good,#17b26a)':'var(--muted)')+'">'+(on?'✓ วางแล้ว':'ยังไม่วาง')+'</td></tr>'}).join('');
-    $('ptab').innerHTML='<thead><tr><th>ชิ้นส่วน</th><th>รหัสบนตัว / แถบสี</th><th>ใบยืม</th><th>สถานะ</th></tr></thead><tbody>'+rows+'</tbody>'}
+      return '<tr><td>'+p.label+'</td><td>'+(p.code||'—')+' '+sw(p)+'</td><td>'+(p.signs?p.signs.map(function(sn,i){return sg(sn)+' '+p.snote[i]}).join('<br>'):'—')+'</td><td>'+(p.no?'No.'+p.no:'—')+'</td><td style="color:'+(on?'var(--good,#17b26a)':'var(--muted)')+'">'+(on?'✓ วางแล้ว':'ยังไม่วาง')+'</td></tr>'}).join('');
+    $('ptab').innerHTML='<thead><tr><th>ชิ้นส่วน</th><th>รหัสบนตัว / แถบสี</th><th>ขั้ว / ขา</th><th>ใบยืม</th><th>สถานะ</th></tr></thead><tbody>'+rows+'</tbody>'}
 
   // ---------- palette + hints
   function buildPalette(){
