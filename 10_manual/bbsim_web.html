@@ -65,6 +65,10 @@ canvas{width:100%;height:130px;display:block;background:var(--scope);border-radi
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
 .foot{color:var(--muted);font-size:12.5px}
+.swatch{display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;vertical-align:-1px}
+.bar{height:8px;border-radius:99px;background:var(--line);margin-top:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--pink);border-radius:99px;transition:width .3s}
+.ptab{width:100%;border-collapse:collapse;font-size:13.5px}.ptab th,.ptab td{text-align:left;padding:5px 8px;border-bottom:1px dashed var(--line)}.ptab th{font-family:var(--f-display);font-size:12.5px;color:var(--muted)}
+.tw{overflow-x:auto}.big{font-size:16px}
 @keyframes pop{0%{transform:scale(.6)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 .pop{animation:pop .25s ease-out;transform-box:fill-box;transform-origin:center}
 @media(prefers-reduced-motion:reduce){.pop{animation:none}button{transition:none}}
@@ -83,6 +87,8 @@ canvas{width:100%;height:130px;display:block;background:var(--scope);border-radi
       <button id="tErase" type="button">ลบ</button>
       <button id="tFlow" type="button" class="sel">ไฟวิ่ง: เปิด</button>
       <span style="flex:1"></span>
+      <button id="bGuide" type="button" class="primary">ต่อทีละขั้น</button>
+      <button id="bSkip" type="button" hidden>ข้ามขั้นนี้</button>
       <button id="bHint" type="button">ใบ้ชิ้นต่อไป</button>
       <button id="bSolve" type="button" class="primary">เฉลย (วางให้ทั้งหมด)</button>
       <button id="bClear" type="button">ล้างบอร์ด</button>
@@ -118,12 +124,13 @@ canvas{width:100%;height:130px;display:block;background:var(--scope);border-radi
       <div class="chk" id="curs"></div>
     </section>
   </div>
+  <section class="card"><h2>รายการอุปกรณ์และรหัส (ตรงกับใบยืมอุปกรณ์)</h2><div class="tw"><table class="ptab" id="ptab"></table></div><p class="foot" style="margin-top:6px">ตัวต้านทานดูจากแถบสี (นับจากแถบที่ห่างขอบน้อยสุด แถบทองอยู่ท้าย) · ตัวเก็บประจุเซรามิกดูเลขบนตัว (103 = 10nF, 104 = 100nF, 474 = 470nF) · เลข "ใบยืม" คือลำดับในใบยืมอุปกรณ์</p></section>
   <p class="foot">ค่าที่จำลองใช้โมเดล op-amp แบบง่าย ผลจริงอาจต่าง ที่ยังไม่ได้วัดคือกระแสแสงจริงของ phototransistor ตอนแตะนิ้ว</p>
 </div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[24, "f", "OUT"], [25, "f", "FB"], [26, "f", "X"], [27, "f", "GND"], [27, "e", "VREF"], [26, "e", "UN"], [25, "e", "UN"], [24, "e", "5V"]], "roles": null}, {"id": "p1", "label": "R10k โหลด PT", "kind": "res", "pins": [[14, "j", "NPT"], [15, "BGND", "GND"]], "roles": null}, {"id": "p2", "label": "C 10µF ตัด DC", "kind": "ele", "pins": [[20, "h", "X"], [14, "h", "NPT"]], "roles": ["ขา + (ขายาว)", "ขา −"]}, {"id": "p3", "label": "R100k ไบอัส", "kind": "res", "pins": [[20, "i", "X"], [17, "i", "VREF"]], "roles": null}, {"id": "p4", "label": "R2.4k", "kind": "res", "pins": [[25, "i", "FB"], [22, "i", "VREF"]], "roles": null}, {"id": "p5", "label": "VR 100k", "kind": "vr", "pins": [[29, "a", "OUT"], [31, "a", "FB"], [33, "a", "FB"]], "roles": ["ขา 1", "ขา 2 (กลาง)", "ขา 3"]}, {"id": "p6", "label": "C 10nF", "kind": "cap", "pins": [[29, "e", "OUT"], [31, "e", "FB"]], "roles": null}, {"id": "p7", "label": "R100k กรอง (LPF)", "kind": "res", "pins": [[24, "j", "OUT"], [28, "j", "Y"]], "roles": null}, {"id": "p8", "label": "C 470nF", "kind": "cap", "pins": [[28, "i", "Y"], [29, "BGND", "GND"]], "roles": null}, {"id": "p9", "label": "C 100µF", "kind": "ele", "pins": [[3, "a", "5V"], [6, "a", "GND"]], "roles": ["ขา + (ขายาว)", "ขา −"]}, {"id": "p10", "label": "C 100nF", "kind": "cap", "pins": [[3, "c", "5V"], [6, "c", "GND"]], "roles": null}, {"id": "p11", "label": "R10k (Vref ล่าง)", "kind": "res", "pins": [[6, "b", "GND"], [9, "TVREF", "VREF"]], "roles": null}, {"id": "p12", "label": "R10k (Vref บน)", "kind": "res", "pins": [[10, "T5V", "5V"], [13, "TVREF", "VREF"]], "roles": null}, {"id": "p13", "label": "C 10µF (Vref)", "kind": "ele", "pins": [[11, "TVREF", "VREF"], [6, "d", "GND"]], "roles": ["ขา + (ขายาว)", "ขา −"]}, {"id": "p14", "label": "Q1 BC548", "kind": "npn", "pins": [[38, "h", "Q1C"], [39, "h", "Q1B"], [40, "h", "GND"]], "roles": ["C (ซ้าย)", "B (กลาง)", "E (ขวา)"]}, {"id": "p15", "label": "R1k ฐาน Q1", "kind": "res", "pins": [[39, "i", "Q1B"], [43, "i", "D9"]], "roles": null}, {"id": "p16", "label": "R220 IR LED", "kind": "res", "pins": [[41, "T5V", "5V"], [44, "a", "IRA"]], "roles": null}], "wires": [[[24, "a"], [24, "T5V"], "5V"], [[27, "g"], [27, "BGND"], "GND"], [[26, "d"], [25, "d"], "UN"], [[27, "d"], [27, "TVREF"], "VREF"], [[20, "g"], [26, "g"], "X"], [[17, "TVREF"], [17, "j"], "VREF"], [[22, "TVREF"], [22, "j"], "VREF"], [[24, "h"], [29, "b"], "OUT"], [[25, "h"], [31, "b"], "FB"], [[31, "c"], [33, "c"], "FB"], [[3, "e"], [3, "T5V"], "5V"], [[6, "e"], [6, "BGND"], "GND"], [[40, "j"], [40, "BGND"], "GND"]], "ports": [{"id": "f0", "label": "Phototransistor ขาสั้น (E)", "hole": [14, "g"], "net": "NPT"}, {"id": "f1", "label": "Phototransistor ขายาว (C)", "hole": [12, "T5V"], "net": "5V"}, {"id": "f2", "label": "Arduino A0", "hole": [28, "g"], "net": "Y"}, {"id": "f3", "label": "Arduino 5V", "hole": [1, "T5V"], "net": "5V"}, {"id": "f4", "label": "Arduino GND", "hole": [1, "BGND"], "net": "GND"}, {"id": "f5", "label": "Arduino D9", "hole": [43, "g"], "net": "D9"}, {"id": "f6", "label": "IR LED ขายาว (A)", "hole": [44, "b"], "net": "IRA"}, {"id": "f7", "label": "IR LED ขาสั้น (K)", "hole": [38, "i"], "net": "Q1C"}]};
+var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[24, "f", "OUT"], [25, "f", "FB"], [26, "f", "X"], [27, "f", "GND"], [27, "e", "VREF"], [26, "e", "UN"], [25, "e", "UN"], [24, "e", "5V"]], "roles": null, "code": "LM358P", "no": 1}, {"id": "p1", "label": "R10k โหลด PT", "kind": "res", "pins": [[14, "j", "NPT"], [15, "BGND", "GND"]], "roles": null, "code": "น้ำตาล-ดำ-ส้ม-ทอง", "bands": ["brown", "black", "orange", "gold"], "no": 16}, {"id": "p2", "label": "C 10µF ตัด DC", "kind": "ele", "pins": [[20, "h", "X"], [14, "h", "NPT"]], "roles": ["ขา + (ขายาว)", "ขา −"], "code": "10µF 16–50V", "no": 23}, {"id": "p3", "label": "R100k ไบอัส", "kind": "res", "pins": [[20, "i", "X"], [17, "i", "VREF"]], "roles": null, "code": "น้ำตาล-ดำ-เหลือง-ทอง", "bands": ["brown", "black", "yellow", "gold"], "no": 17}, {"id": "p4", "label": "R2.4k", "kind": "res", "pins": [[25, "i", "FB"], [22, "i", "VREF"]], "roles": null, "code": "แดง-เหลือง-แดง-ทอง", "bands": ["red", "yellow", "red", "gold"], "no": 14}, {"id": "p5", "label": "VR 100k", "kind": "vr", "pins": [[29, "a", "OUT"], [31, "a", "FB"], [33, "a", "FB"]], "roles": ["ขา 1", "ขา 2 (กลาง)", "ขา 3"], "code": "B100K", "no": 20}, {"id": "p6", "label": "C 10nF", "kind": "cap", "pins": [[29, "e", "OUT"], [31, "e", "FB"]], "roles": null, "code": "103", "no": 27}, {"id": "p7", "label": "R100k กรอง (LPF)", "kind": "res", "pins": [[24, "j", "OUT"], [28, "j", "Y"]], "roles": null, "code": "น้ำตาล-ดำ-เหลือง-ทอง", "bands": ["brown", "black", "yellow", "gold"], "no": 17}, {"id": "p8", "label": "C 470nF", "kind": "cap", "pins": [[28, "i", "Y"], [29, "BGND", "GND"]], "roles": null, "code": "474", "no": 29}, {"id": "p9", "label": "C 100µF", "kind": "ele", "pins": [[3, "a", "5V"], [6, "a", "GND"]], "roles": ["ขา + (ขายาว)", "ขา −"], "code": "100µF 16–50V", "no": 24}, {"id": "p10", "label": "C 100nF", "kind": "cap", "pins": [[3, "c", "5V"], [6, "c", "GND"]], "roles": null, "code": "104", "no": 28}, {"id": "p11", "label": "R10k (Vref ล่าง)", "kind": "res", "pins": [[6, "b", "GND"], [9, "TVREF", "VREF"]], "roles": null, "code": "น้ำตาล-ดำ-ส้ม-ทอง", "bands": ["brown", "black", "orange", "gold"], "no": 16}, {"id": "p12", "label": "R10k (Vref บน)", "kind": "res", "pins": [[10, "T5V", "5V"], [13, "TVREF", "VREF"]], "roles": null, "code": "น้ำตาล-ดำ-ส้ม-ทอง", "bands": ["brown", "black", "orange", "gold"], "no": 16}, {"id": "p13", "label": "C 10µF (Vref)", "kind": "ele", "pins": [[11, "TVREF", "VREF"], [6, "d", "GND"]], "roles": ["ขา + (ขายาว)", "ขา −"], "code": "10µF 16–50V", "no": 23}, {"id": "p14", "label": "Q1 BC548", "kind": "npn", "pins": [[38, "h", "Q1C"], [39, "h", "Q1B"], [40, "h", "GND"]], "roles": ["C (ซ้าย)", "B (กลาง)", "E (ขวา)"], "code": "BC548", "no": 2}, {"id": "p15", "label": "R1k ฐาน Q1", "kind": "res", "pins": [[39, "i", "Q1B"], [43, "i", "D9"]], "roles": null, "code": "น้ำตาล-ดำ-แดง-ทอง", "bands": ["brown", "black", "red", "gold"], "no": 13}, {"id": "p16", "label": "R220 IR LED", "kind": "res", "pins": [[41, "T5V", "5V"], [44, "a", "IRA"]], "roles": null, "code": "แดง-แดง-น้ำตาล-ทอง", "bands": ["red", "red", "brown", "gold"], "no": 11}], "wires": [[[24, "a"], [24, "T5V"], "5V"], [[27, "g"], [27, "BGND"], "GND"], [[26, "d"], [25, "d"], "UN"], [[27, "d"], [27, "TVREF"], "VREF"], [[20, "g"], [26, "g"], "X"], [[17, "TVREF"], [17, "j"], "VREF"], [[22, "TVREF"], [22, "j"], "VREF"], [[24, "h"], [29, "b"], "OUT"], [[25, "h"], [31, "b"], "FB"], [[31, "c"], [33, "c"], "FB"], [[3, "e"], [3, "T5V"], "5V"], [[6, "e"], [6, "BGND"], "GND"], [[40, "j"], [40, "BGND"], "GND"]], "ports": [{"id": "f0", "label": "Phototransistor ขาสั้น (E)", "hole": [14, "g"], "net": "NPT", "code": "Phototransistor 5mm 940nm (หัวดำ)", "no": 4}, {"id": "f1", "label": "Phototransistor ขายาว (C)", "hole": [12, "T5V"], "net": "5V", "code": "Phototransistor 5mm 940nm (หัวดำ)", "no": 4}, {"id": "f2", "label": "Arduino A0", "hole": [28, "g"], "net": "Y"}, {"id": "f3", "label": "Arduino 5V", "hole": [1, "T5V"], "net": "5V"}, {"id": "f4", "label": "Arduino GND", "hole": [1, "BGND"], "net": "GND"}, {"id": "f5", "label": "Arduino D9", "hole": [43, "g"], "net": "D9"}, {"id": "f6", "label": "IR LED ขายาว (A)", "hole": [44, "b"], "net": "IRA", "code": "IR LED 5mm 940nm (หัวใส)", "no": 5}, {"id": "f7", "label": "IR LED ขาสั้น (K)", "hole": [38, "i"], "net": "Q1C", "code": "IR LED 5mm 940nm (หัวใส)", "no": 5}]};
 (function(){
   var $=function(i){return document.getElementById(i)}, NS='http://www.w3.org/2000/svg';
   var COLS=52, PX=24, X0=40;
@@ -257,6 +264,8 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
         var col=d.kind==='res'?'#e3c79a':d.kind==='ele'?'#222c48':'#d9893a';
         var r=el('rect',{x:mx-bl/2,y:my-9,width:bl,height:18,rx:9,fill:col,stroke:'#0007',transform:'rotate('+ang+' '+mx+' '+my+')'},g);
         var t=el('text',{x:mx,y:my-14,'text-anchor':'middle','font-size':10,fill:'var(--fg)','font-weight':700},g);t.textContent=d.label.split(' ').slice(0,2).join(' ');
+        if(d.code&&d.kind==='cap'){var cc=el('text',{x:mx,y:my+4,'text-anchor':'middle','font-size':10,fill:'#fff','font-weight':700},g);cc.textContent=d.code}
+        if(d.bands){d.bands.forEach(function(bn,bi){el('circle',{cx:mx-15+bi*10,cy:my+19,r:4,fill:BANDHEX[bn],stroke:'#0006'},g)})}
         if(d.kind==='ele'){var q=el('text',{x:a[0]+(mx-a[0])*.3,y:a[1]+(my-a[1])*.3+4,'font-size':14,fill:'#ff3030','font-weight':700,'text-anchor':'middle'},g);q.textContent='+'}
         return}
       if(d.kind==='ic'){var xs=H.map(function(h){return h[0]});var x0=Math.min.apply(0,xs)-8,x1=Math.max.apply(0,xs)+8;
@@ -286,6 +295,47 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
     if(meterHole)el('circle',{cx:hx(meterHole[0]),cy:hy(meterHole[1]),r:10,fill:'none',stroke:'var(--teal)','stroke-width':3.5},gParts);
   }
 
+
+  // ---------- guided mode
+  var BANDHEX={brown:'#7a4b1b',black:'#111',orange:'#f08000',red:'#dd1111',yellow:'#e8d000',gold:'#c9a227'};
+  function sw(p){return p.bands?p.bands.map(function(b){return '<span class="swatch" style="background:'+BANDHEX[b]+'"></span>'}).join(''):''}
+  var RN={T5V:'แถบ 5V (บนสุด)',TVREF:'แถบ Vref (ที่สอง)',BGND:'แถบ GND (ล่าง)',BX:'แถบล่างสุด'};
+  function hnm(h){return RAILS.indexOf(h[1])>=0?RN[h[1]]+' คอลัมน์ '+h[0]:'คอลัมน์ '+h[0]+' แถว '+h[1]}
+  var GROUPS=[{t:'ไฟเลี้ยงและ Vref',p:['p9','p10','p12','p11','p13'],f:['f3','f4'],w:[10,11]},{t:'วาง LM358',p:['p0'],f:[],w:[0,1,2,3]},
+    {t:'รับแสง',p:['p1','p2','p3'],f:['f0','f1'],w:[4,5]},{t:'ตัวขยาย (VR)',p:['p4','p5','p6'],f:[],w:[6,7,8,9]},
+    {t:'ตัวกรอง + ส่งเข้า A0',p:['p7','p8'],f:['f2'],w:[]},{t:'ส่งแสง IR',p:['p14','p15','p16'],f:['f5','f6','f7'],w:[12]}];
+  var GSEQ=[];GROUPS.forEach(function(g,gi){g.p.concat(g.f).forEach(function(id){GSEQ.push({k:'part',id:id,g:gi})});g.w.forEach(function(i){GSEQ.push({k:'wire',w:D.wires[i],g:gi})})});
+  var guide={on:false,i:0};
+  function expHoles(id){var p=partById[id];return p.pins?p.pins.map(function(q){return [q[0],q[1]]}):[[p.hole[0],p.hole[1]]]}
+  function keyH(h){return h[0]+','+h[1]}
+  function itemDone(it){
+    if(it.k==='part'){var f=placed.filter(function(q){return q.id===it.id})[0];if(!f)return 0;
+      return f.holes.map(keyH).join('|')===expHoles(it.id).map(keyH).join('|')?1:-1}
+    var a=keyH(it.w[0]),b=keyH(it.w[1]);
+    return placed.some(function(q){return q.t==='wire'&&((keyH(q.a)===a&&keyH(q.b)===b)||(keyH(q.a)===b&&keyH(q.b)===a))})?1:0}
+  function guideUpdate(){
+    while(guide.i<GSEQ.length&&itemDone(GSEQ[guide.i])===1)guide.i++;
+    var N=GSEQ.length,h=$('hint');
+    if(guide.i>=N){tool=null;hintHoles=null;h.innerHTML='<b>ต่อครบทุกชิ้นแล้ว 🎉</b> ดูกราฟและค่ากระแสด้านล่าง หรือใช้มัลติมิเตอร์วัดจุดต่าง ๆ';return}
+    var it=GSEQ[guide.i],st=itemDone(it),pct=Math.round(guide.i/N*100),html='';
+    var head='<b class="big">ขั้นที่ '+(guide.i+1)+' / '+N+' · '+GROUPS[it.g].t+'</b>';
+    if(it.k==='part'){var p=partById[it.id],hs=expHoles(it.id);hintHoles=hs;
+      if(st===-1){tool=null;html=head+'<br><span class="bad">'+p.label+' วางผิดตำแหน่ง</span> ให้อยู่ที่วงกลมเหลือง กด "ลบ" แล้วคลิกชิ้นนั้นเพื่อลบ จากนั้นวางใหม่ (หรือกด "ข้ามขั้นนี้")'}
+      else{tool={type:'part',id:it.id};
+        var where=p.kind==='ic'?'ขา 1 ที่ '+hnm(hs[0])+' (รอยบากหันซ้าย ตัว IC คร่อมร่องกลาง)':p.kind==='npn'?'ขา C ที่ '+hnm(hs[0])+' (หน้าแบนหันหาตัวเรา เรียง C-B-E ไปทางขวา)':p.kind==='vr'?'ขา 1 ที่ '+hnm(hs[0])+' (ขาห่างกัน 2 รู)':(p.roles?p.roles.map(function(r,i){return r+' → '+hnm(hs[i])}).join(' · '):hs.map(hnm).join(' และ '));
+        html=head+'<br>วาง <b>'+p.label+'</b>'+(p.code?' · รหัสบนตัว <b>'+p.code+'</b> '+sw(p):'')+'<br>'+where+' <span style="color:var(--muted)">(คลิกที่วงกลมเหลืองบนบอร์ด)</span>'}}
+    else{var nm=it.w[2],col={'5V':0,GND:1,VREF:2}[nm],cname={'5V':'แดง','GND':'ดำ',VREF:'เขียว'}[nm]||'สีไหนก็ได้';
+      tool={type:'wire'};wireColor=col===undefined?3:col;hintHoles=[it.w[0],it.w[1]];
+      html=head+'<br>ต่อ <b>สาย'+cname+'</b> จาก '+hnm(it.w[0])+' ไป '+hnm(it.w[1])+' <span style="color:var(--muted)">(คลิกวงกลมเหลืองสองจุด)</span>'}
+    h.innerHTML='<div style="width:100%">'+html+'<div class="bar"><i style="width:'+pct+'%"></i></div></div>';
+  }
+  $('bGuide').addEventListener('click',function(){guide.on=!guide.on;guide.i=0;pending=[];if(!guide.on){tool=null;hintHoles=null}render()});
+  $('bSkip').addEventListener('click',function(){guide.i++;pending=[];render()});
+  function ptable(){
+    var rows=D.parts.concat(D.ports.filter(function(p){return p.code})).map(function(p){var on=placed.some(function(q){return q.id===p.id});
+      return '<tr><td>'+p.label+'</td><td>'+(p.code||'—')+' '+sw(p)+'</td><td>'+(p.no?'No.'+p.no:'—')+'</td><td style="color:'+(on?'var(--good,#17b26a)':'var(--muted)')+'">'+(on?'✓ วางแล้ว':'ยังไม่วาง')+'</td></tr>'}).join('');
+    $('ptab').innerHTML='<thead><tr><th>ชิ้นส่วน</th><th>รหัสบนตัว / แถบสี</th><th>ใบยืม</th><th>สถานะ</th></tr></thead><tbody>'+rows+'</tbody>'}
+
   // ---------- palette + hints
   function buildPalette(){
     var pal=$('palette');pal.innerHTML='';
@@ -305,7 +355,7 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
     if(p.kind==='vr')return 'VR: คลิกรูของขา 1 ขาของมันห่างกัน 2 รู';
     var need=p.pins?p.pins.length:1,i=pending.length;
     var lab=p.roles?p.roles[i]:(p.pins?'ขาที่ '+(i+1):'');
-    return p.label+': คลิกรู'+(need>1?(' ของ '+lab+' (ขาที่ '+(i+1)+' จาก '+need+')'):'ที่ต้องการต่อ');
+    return p.label+(p.code?' (รหัส '+p.code+')':'')+': คลิกรู'+(need>1?(' ของ '+lab+' (ขาที่ '+(i+1)+' จาก '+need+')'):'ที่ต้องการต่อ');
   }
   var ORDER=['p0','p9','p10','p12','p11','p13','p1','p2','p3','p4','p5','p6','p7','p8','p14','p15','p16','f3','f4','f1','f0','f2','f5','f6','f7'];
   $('bHint').addEventListener('click',function(){
@@ -380,7 +430,9 @@ var D = {"parts": [{"id": "p0", "label": "LM358 (U1)", "kind": "ic", "pins": [[2
     A=analyse();drawPlaced(A);
     document.querySelectorAll('#palette button').forEach(function(b){var id=b.id.slice(3);b.className=(tool&&tool.type==='part'&&tool.id===id?'sel ':'')+(placed.some(function(q){return q.id===id})?'done':'')});
     ['tWire','tMeter','tErase'].forEach(function(id){$(id).className=(tool&&tool.type===({tWire:'wire',tMeter:'meter',tErase:'erase'})[id])?'sel':''});
-    $('hint').textContent=hintText();
+    if(guide.on)guideUpdate();else $('hint').textContent=hintText();
+    $('bSkip').hidden=!guide.on;$('bGuide').textContent=guide.on?'ออกจากโหมดทีละขั้น':'ต่อทีละขั้น';
+    ptable();
     // checklist
     var rows=[],order=['5V','GND','Vref','VREF','NPT','X','FB','OUT','UN','Y','D9','IRA','Q1C','Q1B'];
     var seen={};

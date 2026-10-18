@@ -38,6 +38,7 @@ canvas:active{cursor:grabbing}
 .legend span{display:flex;gap:8px;align-items:center}
 .legend i{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid var(--line)}
 .foot{color:var(--muted);font-size:12.5px}
+.ptab th,.ptab td{text-align:left;padding:5px 8px;border-bottom:1px dashed var(--line)}.ptab th{font-family:var(--f-display);font-size:12.5px;color:var(--muted)}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
 </style>
 
@@ -55,6 +56,7 @@ canvas:active{cursor:grabbing}
   </div>
   <div class="stage"><canvas id="c" aria-label="โมเดล 3 มิติของวงจรบน breadboard"></canvas><div class="tip" id="tip"></div><div class="help">ลาก = หมุน · ล้อ/บีบนิ้ว = ซูม · ลากขวา = เลื่อน</div></div>
   <div class="legend" id="legend"></div>
+  <div class="stage" style="padding:12px 16px;overflow-x:auto"><h2 style="font-family:var(--f-display);font-size:16px;margin:0 0 8px">รายการอุปกรณ์และรหัส (ตรงกับใบยืม)</h2><table class="ptab" id="ptab" style="width:100%;border-collapse:collapse;font-size:13.5px"></table></div>
   <p class="foot">โมเดลแสดงตำแหน่งเสียบตามแบบเฉลย ขนาดชิ้นส่วนเป็นแบบประมาณ ไม่ใช่ตัวจริง (เช่น ตัว VR ที่ขาห่างกัน 2 รู และ breadboard เป็นแถบไฟไม่ขาดกลางบอร์ด)</p>
 </div>
 
@@ -103,7 +105,7 @@ var D = /*DATA*/;
   function align(obj,u){obj.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),u.clone().normalize())}
   function hint(name){return name}
   D.parts.forEach(function(p){
-    var lab=p.label,k=p.kind,g;
+    var lab=p.label+(p.code?' · '+p.code:''),k=p.kind,g;
     if(k==='res'){
       var v=valOf(lab);
       var r=twoLeg(p,function(len){var L=Math.min(6.4,len*.78),grp=new T.Group();
@@ -187,8 +189,8 @@ var D = /*DATA*/;
     var rim=new T.Mesh(new T.CylinderGeometry(3,3,.8,28),M(body,{transparent:!!clear,opacity:clear?.6:1}));rim.position.set(cx,21.2,cz);g.add(rim);
     [[a,-.6],[b,.6]].forEach(function(e){g.add(tube([e[0],new T.Vector3(e[0].x,6,e[0].z),new T.Vector3(cx+e[1],14,cz),new T.Vector3(cx+e[1],21,cz)],.3,0xc4c4cc,name))});
     all.add(tag(g,name));labelSprite(name,new T.Vector3(cx,33,cz),'#444');return new T.Vector3(cx,24,cz)}
-  var sPT=sensor('f1','f0',0x222222,'Phototransistor',false);
-  var sIR=sensor('f6','f7',0xeeeeee,'IR LED',true);
+  var sPT=sensor('f1','f0',0x222222,'Phototransistor 5mm 940nm (หัวดำ) · ใบยืม 4',false);
+  var sIR=sensor('f6','f7',0xeeeeee,'IR LED 5mm 940nm (หัวใส) · ใบยืม 5',true);
 
   // ---- camera control (orbit)
   var tgt=new T.Vector3(0,3,0),sph={r:230,th:.9,ph:.75},autoSpin=false;
@@ -222,6 +224,13 @@ var D = /*DATA*/;
     if(hits.length){tip.textContent=hits[0].object.userData.label;tip.style.left=(e.clientX-r.left)+'px';tip.style.top=(e.clientY-r.top)+'px';tip.classList.add('show')}else tip.classList.remove('show')}
   cv.addEventListener('pointerleave',function(){tip.classList.remove('show')});
   // legend
+  
+  var BANDHEX={brown:'#7a4b1b',black:'#111',orange:'#f08000',red:'#dd1111',yellow:'#e8d000',gold:'#c9a227'};
+  function sw(p){return p.bands?p.bands.map(function(b){return '<span class="swatch" style="display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;background:'+BANDHEX[b]+'"></span>'}).join(''):''}
+  function fillTable(id){var rows=D.parts.concat(D.ports.filter(function(p){return p.code})).map(function(p){return '<tr><td>'+p.label+'</td><td>'+(p.code||'—')+' '+sw(p)+'</td><td>'+(p.no?'No.'+p.no:'—')+'</td></tr>'}).join('');
+    document.getElementById(id).innerHTML='<thead><tr><th>ชิ้นส่วน</th><th>รหัสบนตัว / แถบสี</th><th>ใบยืม</th></tr></thead><tbody>'+rows+'</tbody>'}
+  
+  fillTable('ptab');
   var LG=[['#e02020','สาย/ขา 5V'],['#202020','สาย/ขา GND'],['#1ea03c','สาย Vref 2.5V'],['#8a3fb0','สายหลังตัวเก็บประจุ (X)'],['#2f6fe0','สายสัญญาณ'],['#2a3550','ตัวเก็บประจุอิเล็กโทรไลติก (แถบขาว = ขา −)'],['#e3c79a','ตัวต้านทาน (แถบสีบอกค่า)'],['#3a78c8','VR100k (ตัวหมุน)']];
   $('legend').innerHTML=LG.map(function(l){return '<span><i style="background:'+l[0]+'"></i>'+l[1]+'</span>'}).join('');
 

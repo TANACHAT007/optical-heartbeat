@@ -65,6 +65,10 @@ canvas{width:100%;height:130px;display:block;background:var(--scope);border-radi
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
 .foot{color:var(--muted);font-size:12.5px}
+.swatch{display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 1px;border:1px solid #0005;vertical-align:-1px}
+.bar{height:8px;border-radius:99px;background:var(--line);margin-top:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--pink);border-radius:99px;transition:width .3s}
+.ptab{width:100%;border-collapse:collapse;font-size:13.5px}.ptab th,.ptab td{text-align:left;padding:5px 8px;border-bottom:1px dashed var(--line)}.ptab th{font-family:var(--f-display);font-size:12.5px;color:var(--muted)}
+.tw{overflow-x:auto}.big{font-size:16px}
 @keyframes pop{0%{transform:scale(.6)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 .pop{animation:pop .25s ease-out;transform-box:fill-box;transform-origin:center}
 @media(prefers-reduced-motion:reduce){.pop{animation:none}button{transition:none}}
@@ -83,6 +87,8 @@ canvas{width:100%;height:130px;display:block;background:var(--scope);border-radi
       <button id="tErase" type="button">ลบ</button>
       <button id="tFlow" type="button" class="sel">ไฟวิ่ง: เปิด</button>
       <span style="flex:1"></span>
+      <button id="bGuide" type="button" class="primary">ต่อทีละขั้น</button>
+      <button id="bSkip" type="button" hidden>ข้ามขั้นนี้</button>
       <button id="bHint" type="button">ใบ้ชิ้นต่อไป</button>
       <button id="bSolve" type="button" class="primary">เฉลย (วางให้ทั้งหมด)</button>
       <button id="bClear" type="button">ล้างบอร์ด</button>
@@ -118,6 +124,7 @@ canvas{width:100%;height:130px;display:block;background:var(--scope);border-radi
       <div class="chk" id="curs"></div>
     </section>
   </div>
+  <section class="card"><h2>รายการอุปกรณ์และรหัส (ตรงกับใบยืมอุปกรณ์)</h2><div class="tw"><table class="ptab" id="ptab"></table></div><p class="foot" style="margin-top:6px">ตัวต้านทานดูจากแถบสี (นับจากแถบที่ห่างขอบน้อยสุด แถบทองอยู่ท้าย) · ตัวเก็บประจุเซรามิกดูเลขบนตัว (103 = 10nF, 104 = 100nF, 474 = 470nF) · เลข "ใบยืม" คือลำดับในใบยืมอุปกรณ์</p></section>
   <p class="foot">ค่าที่จำลองใช้โมเดล op-amp แบบง่าย ผลจริงอาจต่าง ที่ยังไม่ได้วัดคือกระแสแสงจริงของ phototransistor ตอนแตะนิ้ว</p>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -257,6 +264,8 @@ var D = /*DATA*/;
         var col=d.kind==='res'?'#e3c79a':d.kind==='ele'?'#222c48':'#d9893a';
         var r=el('rect',{x:mx-bl/2,y:my-9,width:bl,height:18,rx:9,fill:col,stroke:'#0007',transform:'rotate('+ang+' '+mx+' '+my+')'},g);
         var t=el('text',{x:mx,y:my-14,'text-anchor':'middle','font-size':10,fill:'var(--fg)','font-weight':700},g);t.textContent=d.label.split(' ').slice(0,2).join(' ');
+        if(d.code&&d.kind==='cap'){var cc=el('text',{x:mx,y:my+4,'text-anchor':'middle','font-size':10,fill:'#fff','font-weight':700},g);cc.textContent=d.code}
+        if(d.bands){d.bands.forEach(function(bn,bi){el('circle',{cx:mx-15+bi*10,cy:my+19,r:4,fill:BANDHEX[bn],stroke:'#0006'},g)})}
         if(d.kind==='ele'){var q=el('text',{x:a[0]+(mx-a[0])*.3,y:a[1]+(my-a[1])*.3+4,'font-size':14,fill:'#ff3030','font-weight':700,'text-anchor':'middle'},g);q.textContent='+'}
         return}
       if(d.kind==='ic'){var xs=H.map(function(h){return h[0]});var x0=Math.min.apply(0,xs)-8,x1=Math.max.apply(0,xs)+8;
@@ -286,6 +295,47 @@ var D = /*DATA*/;
     if(meterHole)el('circle',{cx:hx(meterHole[0]),cy:hy(meterHole[1]),r:10,fill:'none',stroke:'var(--teal)','stroke-width':3.5},gParts);
   }
 
+
+  // ---------- guided mode
+  var BANDHEX={brown:'#7a4b1b',black:'#111',orange:'#f08000',red:'#dd1111',yellow:'#e8d000',gold:'#c9a227'};
+  function sw(p){return p.bands?p.bands.map(function(b){return '<span class="swatch" style="background:'+BANDHEX[b]+'"></span>'}).join(''):''}
+  var RN={T5V:'แถบ 5V (บนสุด)',TVREF:'แถบ Vref (ที่สอง)',BGND:'แถบ GND (ล่าง)',BX:'แถบล่างสุด'};
+  function hnm(h){return RAILS.indexOf(h[1])>=0?RN[h[1]]+' คอลัมน์ '+h[0]:'คอลัมน์ '+h[0]+' แถว '+h[1]}
+  var GROUPS=[{t:'ไฟเลี้ยงและ Vref',p:['p9','p10','p12','p11','p13'],f:['f3','f4'],w:[10,11]},{t:'วาง LM358',p:['p0'],f:[],w:[0,1,2,3]},
+    {t:'รับแสง',p:['p1','p2','p3'],f:['f0','f1'],w:[4,5]},{t:'ตัวขยาย (VR)',p:['p4','p5','p6'],f:[],w:[6,7,8,9]},
+    {t:'ตัวกรอง + ส่งเข้า A0',p:['p7','p8'],f:['f2'],w:[]},{t:'ส่งแสง IR',p:['p14','p15','p16'],f:['f5','f6','f7'],w:[12]}];
+  var GSEQ=[];GROUPS.forEach(function(g,gi){g.p.concat(g.f).forEach(function(id){GSEQ.push({k:'part',id:id,g:gi})});g.w.forEach(function(i){GSEQ.push({k:'wire',w:D.wires[i],g:gi})})});
+  var guide={on:false,i:0};
+  function expHoles(id){var p=partById[id];return p.pins?p.pins.map(function(q){return [q[0],q[1]]}):[[p.hole[0],p.hole[1]]]}
+  function keyH(h){return h[0]+','+h[1]}
+  function itemDone(it){
+    if(it.k==='part'){var f=placed.filter(function(q){return q.id===it.id})[0];if(!f)return 0;
+      return f.holes.map(keyH).join('|')===expHoles(it.id).map(keyH).join('|')?1:-1}
+    var a=keyH(it.w[0]),b=keyH(it.w[1]);
+    return placed.some(function(q){return q.t==='wire'&&((keyH(q.a)===a&&keyH(q.b)===b)||(keyH(q.a)===b&&keyH(q.b)===a))})?1:0}
+  function guideUpdate(){
+    while(guide.i<GSEQ.length&&itemDone(GSEQ[guide.i])===1)guide.i++;
+    var N=GSEQ.length,h=$('hint');
+    if(guide.i>=N){tool=null;hintHoles=null;h.innerHTML='<b>ต่อครบทุกชิ้นแล้ว 🎉</b> ดูกราฟและค่ากระแสด้านล่าง หรือใช้มัลติมิเตอร์วัดจุดต่าง ๆ';return}
+    var it=GSEQ[guide.i],st=itemDone(it),pct=Math.round(guide.i/N*100),html='';
+    var head='<b class="big">ขั้นที่ '+(guide.i+1)+' / '+N+' · '+GROUPS[it.g].t+'</b>';
+    if(it.k==='part'){var p=partById[it.id],hs=expHoles(it.id);hintHoles=hs;
+      if(st===-1){tool=null;html=head+'<br><span class="bad">'+p.label+' วางผิดตำแหน่ง</span> ให้อยู่ที่วงกลมเหลือง กด "ลบ" แล้วคลิกชิ้นนั้นเพื่อลบ จากนั้นวางใหม่ (หรือกด "ข้ามขั้นนี้")'}
+      else{tool={type:'part',id:it.id};
+        var where=p.kind==='ic'?'ขา 1 ที่ '+hnm(hs[0])+' (รอยบากหันซ้าย ตัว IC คร่อมร่องกลาง)':p.kind==='npn'?'ขา C ที่ '+hnm(hs[0])+' (หน้าแบนหันหาตัวเรา เรียง C-B-E ไปทางขวา)':p.kind==='vr'?'ขา 1 ที่ '+hnm(hs[0])+' (ขาห่างกัน 2 รู)':(p.roles?p.roles.map(function(r,i){return r+' → '+hnm(hs[i])}).join(' · '):hs.map(hnm).join(' และ '));
+        html=head+'<br>วาง <b>'+p.label+'</b>'+(p.code?' · รหัสบนตัว <b>'+p.code+'</b> '+sw(p):'')+'<br>'+where+' <span style="color:var(--muted)">(คลิกที่วงกลมเหลืองบนบอร์ด)</span>'}}
+    else{var nm=it.w[2],col={'5V':0,GND:1,VREF:2}[nm],cname={'5V':'แดง','GND':'ดำ',VREF:'เขียว'}[nm]||'สีไหนก็ได้';
+      tool={type:'wire'};wireColor=col===undefined?3:col;hintHoles=[it.w[0],it.w[1]];
+      html=head+'<br>ต่อ <b>สาย'+cname+'</b> จาก '+hnm(it.w[0])+' ไป '+hnm(it.w[1])+' <span style="color:var(--muted)">(คลิกวงกลมเหลืองสองจุด)</span>'}
+    h.innerHTML='<div style="width:100%">'+html+'<div class="bar"><i style="width:'+pct+'%"></i></div></div>';
+  }
+  $('bGuide').addEventListener('click',function(){guide.on=!guide.on;guide.i=0;pending=[];if(!guide.on){tool=null;hintHoles=null}render()});
+  $('bSkip').addEventListener('click',function(){guide.i++;pending=[];render()});
+  function ptable(){
+    var rows=D.parts.concat(D.ports.filter(function(p){return p.code})).map(function(p){var on=placed.some(function(q){return q.id===p.id});
+      return '<tr><td>'+p.label+'</td><td>'+(p.code||'—')+' '+sw(p)+'</td><td>'+(p.no?'No.'+p.no:'—')+'</td><td style="color:'+(on?'var(--good,#17b26a)':'var(--muted)')+'">'+(on?'✓ วางแล้ว':'ยังไม่วาง')+'</td></tr>'}).join('');
+    $('ptab').innerHTML='<thead><tr><th>ชิ้นส่วน</th><th>รหัสบนตัว / แถบสี</th><th>ใบยืม</th><th>สถานะ</th></tr></thead><tbody>'+rows+'</tbody>'}
+
   // ---------- palette + hints
   function buildPalette(){
     var pal=$('palette');pal.innerHTML='';
@@ -305,7 +355,7 @@ var D = /*DATA*/;
     if(p.kind==='vr')return 'VR: คลิกรูของขา 1 ขาของมันห่างกัน 2 รู';
     var need=p.pins?p.pins.length:1,i=pending.length;
     var lab=p.roles?p.roles[i]:(p.pins?'ขาที่ '+(i+1):'');
-    return p.label+': คลิกรู'+(need>1?(' ของ '+lab+' (ขาที่ '+(i+1)+' จาก '+need+')'):'ที่ต้องการต่อ');
+    return p.label+(p.code?' (รหัส '+p.code+')':'')+': คลิกรู'+(need>1?(' ของ '+lab+' (ขาที่ '+(i+1)+' จาก '+need+')'):'ที่ต้องการต่อ');
   }
   var ORDER=['p0','p9','p10','p12','p11','p13','p1','p2','p3','p4','p5','p6','p7','p8','p14','p15','p16','f3','f4','f1','f0','f2','f5','f6','f7'];
   $('bHint').addEventListener('click',function(){
@@ -380,7 +430,9 @@ var D = /*DATA*/;
     A=analyse();drawPlaced(A);
     document.querySelectorAll('#palette button').forEach(function(b){var id=b.id.slice(3);b.className=(tool&&tool.type==='part'&&tool.id===id?'sel ':'')+(placed.some(function(q){return q.id===id})?'done':'')});
     ['tWire','tMeter','tErase'].forEach(function(id){$(id).className=(tool&&tool.type===({tWire:'wire',tMeter:'meter',tErase:'erase'})[id])?'sel':''});
-    $('hint').textContent=hintText();
+    if(guide.on)guideUpdate();else $('hint').textContent=hintText();
+    $('bSkip').hidden=!guide.on;$('bGuide').textContent=guide.on?'ออกจากโหมดทีละขั้น':'ต่อทีละขั้น';
+    ptable();
     // checklist
     var rows=[],order=['5V','GND','Vref','VREF','NPT','X','FB','OUT','UN','Y','D9','IRA','Q1C','Q1B'];
     var seen={};
