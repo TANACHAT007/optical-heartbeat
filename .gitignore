@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+.DS_Store
+01_reference/project-detail_R2.pdf

@@ -1,0 +1,19 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Optical Heartbeat Detector</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&family=Sarabun:wght@400;600&display=swap">
+<style>
+:root{--bg:#fff8fb;--card:#fff;--fg:#2a1f3d;--muted:#7a6f8f;--line:#f0e3ee;--pink:#ff5d8f}
+@media(prefers-color-scheme:dark){:root{--bg:#171126;--card:#221a36;--fg:#f6eefc;--muted:#a99cc4;--line:#352a52}}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'Sarabun',system-ui,sans-serif;line-height:1.55;padding:28px max(16px,env(safe-area-inset-left)) 40px}
+main{max-width:760px;margin:0 auto}h1{font-family:'Mali','Sarabun',sans-serif;font-size:clamp(26px,5vw,38px);margin:0 0 6px}
+p{color:var(--muted)}a.card{display:block;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:14px 18px;margin:12px 0;color:var(--fg);text-decoration:none;box-shadow:0 6px 0 rgba(139,92,246,.1);transition:transform .12s}
+a.card:hover{transform:translateY(-3px) rotate(-.4deg);border-color:var(--pink)}a.card b{font-family:'Mali','Sarabun',sans-serif;font-size:18px}
+@media(prefers-reduced-motion:reduce){a.card{transition:none}}
+</style></head><body><main>
+<h1>Optical Heartbeat Detector</h1>
+<p>เครื่องวัดชีพจรด้วยแสงอินฟราเรด (IR LED + phototransistor → LM358 → Arduino) · Mini-project 1/2026 · ออกแบบและจำลองแล้ว ยังไม่ได้ต่อวัดกับของจริง</p>
+<a class="card" href="sim.html"><b>เครื่องจำลองชีพจร</b><br>ปรับแสงสะท้อน ชีพจร และ VR ดูสัญญาณทุกจุดและอ่าน BPM</a>
+<a class="card" href="builder.html"><b>ต่อวงจรบนเบรดบอร์ด</b><br>วงจรที่ต่อเสร็จ เห็นกระแสไฟวิ่ง กราฟ และลองต่อเองพร้อมมัลติมิเตอร์</a>
+<a class="card" href="view3d.html"><b>วงจร 3 มิติ</b><br>หมุนดูวงจรบน breadboard ชี้ดูชื่อชิ้นส่วน</a>
+<a class="card" href="https://github.com/TANACHAT007/optical-heartbeat"><b>โค้ดและไฟล์ทั้งหมดบน GitHub</b><br>โค้ด Arduino, สคีแมติก KiCad, รูปต่อทีละขั้น, เคส 3D</a>
+</main></body></html>

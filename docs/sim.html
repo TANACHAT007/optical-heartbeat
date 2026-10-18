@@ -1,0 +1,299 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}</style>
+<title>เครื่องจำลองชีพจร</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&family=Sarabun:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* layout: controls left, live scopes + OLED right; stacks on phones. Palette: bright candy tones on soft white / deep plum */
+:root{
+  --bg:#fff8fb; --card:#ffffff; --fg:#2a1f3d; --muted:#7a6f8f; --line:#f0e3ee;
+  --pink:#ff5d8f; --teal:#18b8a6; --sun:#ffb81c; --sky:#4aa3ff; --grape:#8b5cf6;
+  --good:#17b26a; --warn:#f59e0b; --bad:#ef4444;
+  --scope:#fffdf6; --grid:#f1e7d6; --oled:#05060a; --oledfg:#7fe3ff;
+  --shadow:0 6px 0 rgba(139,92,246,.10);
+  --f-display:'Mali','Sarabun',sans-serif; --f-body:'Sarabun',system-ui,sans-serif; --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#171126; --card:#221a36; --fg:#f6eefc; --muted:#a99cc4; --line:#352a52;
+  --scope:#1b1430; --grid:#33274f; --oled:#020308; --shadow:0 6px 0 rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171126; --card:#221a36; --fg:#f6eefc; --muted:#a99cc4; --line:#352a52;
+  --scope:#1b1430; --grid:#33274f; --oled:#020308; --shadow:0 6px 0 rgba(0,0,0,.35); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto}
+header{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+h1{font-family:var(--f-display);font-size:clamp(24px,4vw,34px);margin:0;line-height:1.15;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;font-size:14px}
+.heart{width:54px;height:54px;flex:none;animation:beat 1s ease-in-out infinite;transform-origin:50% 55%}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(.97)}45%{transform:scale(1.1)}}
+.grid{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:16px;box-shadow:var(--shadow)}
+.card h2{font-family:var(--f-display);font-size:17px;margin:0 0 10px}
+.stack{display:flex;flex-direction:column;gap:14px;min-width:0}
+.ctl{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:14px}
+.ctl output{font-family:var(--f-mono);color:var(--grape);font-weight:500}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+input[type=range]{width:100%;accent-color:var(--pink);height:26px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;font-family:var(--f-display);font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--fg);
+  border-radius:999px;padding:8px 16px;cursor:pointer;transition:transform .12s, background .12s}
+button:hover{transform:translateY(-2px) rotate(-1deg)}
+button:active{transform:translateY(1px) scale(.97)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+button.primary{background:var(--pink);border-color:var(--pink);color:#fff}
+button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chips button{font-size:13px;padding:5px 12px;font-weight:600;font-family:var(--f-body)}
+.top{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:14px}
+@media(max-width:560px){.top{grid-template-columns:minmax(0,1fr)}}
+.oled{background:var(--oled);border-radius:16px;border:3px solid #2b2f45;padding:12px 14px;color:var(--oledfg);font-family:var(--f-mono);min-height:150px;position:relative}
+.oled small{opacity:.75;font-size:12px}
+.oled .bpm{font-size:64px;line-height:1;margin-top:8px;font-weight:500;letter-spacing:-2px}
+.oled .unit{position:absolute;right:14px;bottom:12px;font-size:20px}
+.oled .dot{position:absolute;right:14px;top:12px;width:12px;height:12px;border-radius:50%;background:var(--oledfg);opacity:.15;transition:opacity .08s}
+.oled .dot.on{opacity:1}
+.status{display:flex;flex-direction:column;gap:10px;justify-content:center;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;font-family:var(--f-display);font-weight:700;font-size:15px;width:fit-content;max-width:100%}
+.pill i{width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
+.pill.good{background:color-mix(in srgb,var(--good) 16%,var(--card));color:var(--good)}
+.pill.warn{background:color-mix(in srgb,var(--warn) 18%,var(--card));color:var(--warn)}
+.pill.bad{background:color-mix(in srgb,var(--bad) 16%,var(--card));color:var(--bad)}
+.pill.wait{background:color-mix(in srgb,var(--sky) 16%,var(--card));color:var(--sky)}
+.led{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.led b{width:16px;height:16px;border-radius:50%;background:var(--line);border:2px solid var(--muted);transition:background .06s,box-shadow .06s}
+.led b.on{background:var(--sun);box-shadow:0 0 14px var(--sun);border-color:var(--sun)}
+.scopes{display:flex;flex-direction:column;gap:10px}
+.sc{background:var(--scope);border:2px solid var(--line);border-radius:14px;padding:6px 8px 4px;min-width:0}
+.sc .t{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;color:var(--muted);gap:8px}
+.sc canvas{width:100%;height:120px;display:block}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px dashed var(--line)}
+th{font-family:var(--f-display);font-size:13px;color:var(--muted)}
+td.v{font-family:var(--f-mono);font-weight:500;white-space:nowrap}
+.tw{overflow-x:auto}
+.foot{color:var(--muted);font-size:12.5px;margin-top:14px}
+@media(prefers-reduced-motion:reduce){.heart{animation:none}button{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <svg class="heart" id="heart" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 56C10 40 4 28 4 19 4 11 10 6 17 6c6 0 11 3 15 9 4-6 9-9 15-9 7 0 13 5 13 13 0 9-6 21-28 37z" fill="#ff5d8f"/><circle cx="21" cy="19" r="4" fill="#fff" opacity=".55"/></svg>
+    <div>
+      <h1>เครื่องจำลองชีพจร</h1>
+      <p class="sub">Optical Heartbeat Detector · IR LED + phototransistor → LM358 → Arduino A0 (จำลองด้วยค่าอุปกรณ์จริงของวงจร)</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="stack">
+      <section class="card">
+        <h2>ลองปรับเอง</h2>
+        <div class="btns" style="margin-bottom:12px">
+          <button id="finger" class="on" type="button">วางนิ้วอยู่ 👆</button>
+          <button id="reset" class="primary" type="button">เปิดเครื่องใหม่</button>
+        </div>
+        <div class="chips" aria-label="ตัวอย่าง">
+          <button type="button" data-p="light">นิ้วแตะเบา ๆ</button>
+          <button type="button" data-p="press">กดแรงไป</button>
+          <button type="button" data-p="sun">แสงห้องจ้า</button>
+          <button type="button" data-p="weak">ชีพจรจาง</button>
+        </div>
+        <div class="ctl"><label for="idc">แสงสะท้อนที่ตัวรับ (นิ่ง) <output id="o_idc"></output></label>
+          <input id="idc" type="range" min="5" max="700" step="5" value="100">
+          <p class="hint">กระแส phototransistor ตอนมีนิ้ว เกิน ~500 µA ตัวรับอิ่มตัว</p></div>
+        <div class="ctl"><label for="mod">ชีพจรแกว่งกี่ % <output id="o_mod"></output></label>
+          <input id="mod" type="range" min="0.1" max="3" step="0.1" value="1"></div>
+        <div class="ctl"><label for="bpm">ชีพจรจริง <output id="o_bpm"></output></label>
+          <input id="bpm" type="range" min="40" max="180" step="1" value="72"></div>
+        <div class="ctl"><label for="vr">VR100k (หมุนปรับ) <output id="o_vr"></output></label>
+          <input id="vr" type="range" min="0" max="100" step="1" value="100">
+          <p class="hint" id="gainTxt"></p></div>
+        <div class="ctl"><label for="noise">สัญญาณรบกวนที่ A0 <output id="o_noise"></output></label>
+          <input id="noise" type="range" min="0" max="40" step="1" value="3"></div>
+        <div class="ctl"><label for="speed">ความเร็วจำลอง <output id="o_speed"></output></label>
+          <input id="speed" type="range" min="1" max="4" step="1" value="1"></div>
+      </section>
+
+      <section class="card">
+        <h2>วัดด้วยมัลติมิเตอร์ ควรได้เท่านี้</h2>
+        <div class="tw"><table>
+          <thead><tr><th>จุดวัด</th><th>ค่าที่ควรเห็น</th></tr></thead>
+          <tbody id="meter"></tbody></table></div>
+        <p class="hint" style="margin-top:8px">ค่าเปลี่ยนตามตัวเลื่อนด้านบน ใช้เทียบกับของจริงตอนต่อ ถ้าจุดไหนต่างมาก แสดงว่าสายหรืออุปกรณ์จุดนั้นมีปัญหา</p>
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="card">
+        <div class="top">
+          <div class="oled" aria-live="off">
+            <small>Heart rate</small><span class="dot" id="dot"></span>
+            <div class="bpm" id="bpmOut">--</div><span class="unit">BPM</span>
+          </div>
+          <div class="status">
+            <span class="pill wait" id="pill"><i></i><span id="pillTxt">รอสัญญาณนิ่ง</span></span>
+            <div id="msg" class="hint"></div>
+            <div class="led"><b id="led"></b> LED บนบอร์ด Arduino (D13) กะพริบตามชีพจร</div>
+            <div class="hint">A0 เฉลี่ย <b id="a0m">-</b> · แกว่ง <b id="a0p">-</b></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>ดูสัญญาณทุกจุด (8 วินาทีล่าสุด)</h2>
+        <div class="scopes">
+          <div class="sc"><div class="t"><span>① โหนดตัวรับแสง (หลัง R10k)</span><span>0–5 V</span></div><canvas id="c1"></canvas></div>
+          <div class="sc"><div class="t"><span>② ขาออก LM358 (เส้นประ = ขีดจำกัด 0.05–3.5 V)</span><span>0–5 V</span></div><canvas id="c2"></canvas></div>
+          <div class="sc"><div class="t"><span>③ ที่ A0 (ค่า ADC) · จุดสีชมพู = จับชีพจรได้</span><span>0–1023</span></div><canvas id="c3"></canvas></div>
+        </div>
+        <p class="foot">จำลองด้วยโมเดล op-amp แบบง่าย (GBW 1 MHz, เอาต์พุตจำกัด 0.05–3.5 V) และตรรกะตรวจจับชีพจรเดียวกับโค้ด Arduino ผลจริงอาจต่างเพราะ offset, สัญญาณรบกวนและกระแสแสงจริงที่ยังไม่ได้วัด</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---- circuit constants (match 08_firmware/README_wiring.md)
+  var VCC=5, VREF=2.5, RLOAD=10e3, CHP=10e-6, RB=100e3, RG=2400, RLP=100e3, CLP=470e-9;
+  var DT=0.002, SAMPLE=0.01, HIST=800;
+  var $=function(i){return document.getElementById(i)};
+  var S={idc:100,mod:1,bpm:72,vr:100,noise:3,speed:1,finger:true};
+  var st, hist;
+
+  function reset(){
+    st={t:0,vc:0,vr:0,y:0,lastS:0,
+        base:512,lp:0,level:0,above:false,lastBeat:0,buf:[],bpm:0,ledOff:0,beatFlash:0,
+        nextBeatT:0};
+    hist={pt:[],oa:[],a0:[],beat:[]};
+    for(var i=0;i<HIST;i++){hist.pt.push(0);hist.oa.push(2.5);hist.a0.push(512);hist.beat.push(0)}
+    ui.bpm=0;
+  }
+  var ui={bpm:0};
+  function clamp(x,a,b){return Math.min(b,Math.max(a,x))}
+  function gain(){return 1+S.vr*1000/RG}
+
+  var RD=5000, CV=10e-6;   // Vref divider (R10k||R10k) and its 10uF: not a perfect AC ground
+  function effGain(){      // gain seen at the pulse frequency, including Vref source impedance
+    var w=2*Math.PI*Math.max(0.5,S.bpm/60), a=RD*(1), re=RD/(1+Math.pow(w*RD*CV,2)), im=-RD*w*RD*CV/(1+Math.pow(w*RD*CV,2));
+    var dr=RG+re, di=im, m=dr*dr+di*di, rv=S.vr*1000;
+    var gr=1+rv*dr/m, gi=-rv*di/m; return Math.sqrt(gr*gr+gi*gi);
+  }
+  function gain(){return effGain()}
+
+  function step(){
+    var t=st.t, k=RLOAD/RB, rv=S.vr*1000;
+    var pulse=Math.sin(2*Math.PI*S.bpm/60*t);
+    var ipt=S.finger? S.idc*1e-6*(1+S.mod/100*pulse) : 2e-6;
+    var vpt=clamp((ipt*RLOAD+(st.vc+st.vr)*k)/(1+k),0,VCC-0.3);   // PT node: R10k in parallel with the coupling path
+    var vx=vpt-st.vc, ib=(vx-st.vr)/RB;
+    var olin=vx+(vx-st.vr)*rv/RG, oa, ifb;
+    if(olin>=0.05&&olin<=3.5){oa=olin;ifb=(vx-st.vr)/RG}
+    else{oa=olin<0.05?0.05:3.5;ifb=(oa-st.vr)/(rv+RG)}
+    st.vc+=ib/CHP*DT;
+    st.vr+=((VREF-st.vr)/RD+ifb+ib)/CV*DT;
+    st.y+=(oa-st.y)*DT/(RLP*CLP);
+    st.vpt=vpt; st.oa=oa; st.t+=DT;
+  }
+
+  function firmware(){
+    var noise=(Math.random()*2-1)*S.noise/1000;
+    var a0=clamp(st.y+noise,0,5);
+    var raw=Math.round(a0/VCC*1023), now=st.t*1000;
+    st.base+=(raw-st.base)*0.02; var ac=raw-st.base;
+    st.lp+=(ac-st.lp)*0.3; st.level=Math.max(Math.abs(st.lp),st.level*0.995);
+    var thr=Math.max(st.level*0.5,6), beat=0;
+    if(!st.above && st.lp>thr && now-st.lastBeat>300){
+      st.above=true;
+      if(st.lastBeat!==0){
+        var b=60000/(now-st.lastBeat);
+        if(b>=40&&b<=200){st.buf.push(b); if(st.buf.length>5)st.buf.shift();
+          var s=0;st.buf.forEach(function(v){s+=v});st.bpm=s/st.buf.length}
+      }
+      st.lastBeat=now; st.ledOff=now+80; beat=1; st.flash=now+80;
+    } else if(st.above && st.lp<thr*0.3){st.above=false}
+    if(st.lastBeat && now-st.lastBeat>3000){st.buf=[];st.lastBeat=0;st.bpm=0}
+    push(hist.pt,st.vpt); push(hist.oa,st.oa); push(hist.a0,raw); push(hist.beat,beat);
+    ui.led=now<st.ledOff;
+  }
+  function push(a,v){a.push(v);if(a.length>HIST)a.shift()}
+
+  // ---- drawing
+  function fit(c){var r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;
+    if(c.width!==Math.round(r.width*d)||c.height!==Math.round(r.height*d)){c.width=Math.round(r.width*d);c.height=Math.round(r.height*d)}return d}
+  function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+  function scope(id,data,min,max,color,opt){
+    var c=$(id),d=fit(c),g=c.getContext('2d'),w=c.width,h=c.height;
+    g.clearRect(0,0,w,h);
+    g.strokeStyle=css('--grid');g.lineWidth=1*d;
+    for(var i=1;i<4;i++){var y=h*i/4;g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}
+    for(i=1;i<8;i++){var x=w*i/8;g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}
+    function Y(v){return h-(v-min)/(max-min)*h}
+    if(opt&&opt.lines){g.setLineDash([6*d,5*d]);g.strokeStyle=css('--bad');opt.lines.forEach(function(v){g.beginPath();g.moveTo(0,Y(v));g.lineTo(w,Y(v));g.stroke()});g.setLineDash([])}
+    if(opt&&opt.mid!=null){g.strokeStyle=css('--muted');g.globalAlpha=.4;g.beginPath();g.moveTo(0,Y(opt.mid));g.lineTo(w,Y(opt.mid));g.stroke();g.globalAlpha=1}
+    g.strokeStyle=color;g.lineWidth=2.4*d;g.lineJoin='round';g.beginPath();
+    data.forEach(function(v,i){var x=i/(HIST-1)*w,y=Y(clamp(v,min,max));i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke();
+    if(opt&&opt.beats){g.fillStyle=css('--pink');opt.beats.forEach(function(b,i){if(b){var x=i/(HIST-1)*w;g.beginPath();g.arc(x,Y(data[i]),5*d,0,7);g.fill()}})}
+    g.fillStyle=css('--muted');g.font=(11*d)+'px '+css('--f-mono');g.fillText(max,4*d,12*d);g.fillText(min,4*d,h-4*d);
+  }
+
+  var lastUI=0;
+  function render(){
+    scope('c1',hist.pt,0,5,css('--sun'));
+    scope('c2',hist.oa,0,5,css('--teal'),{lines:[0.05,3.5],mid:2.5});
+    scope('c3',hist.a0,0,1023,css('--grape'),{beats:hist.beat,mid:512});
+    var rec=hist.a0.slice(-300),mn=Math.min.apply(null,rec),mx=Math.max.apply(null,rec),pp=mx-mn,mean=rec.reduce(function(a,b){return a+b},0)/rec.length;
+    var oaR=hist.oa.slice(-300),clip=oaR.filter(function(v){return v<=0.06||v>=3.49}).length/oaR.length;
+    $('a0m').textContent=(mean/1023*5).toFixed(2)+' V ('+Math.round(mean)+')'; $('a0p').textContent=Math.round(pp)+' count';
+    $('bpmOut').textContent=st.bpm>0?Math.round(st.bpm):'--';
+    $('dot').classList.toggle('on',!!ui.led); $('led').classList.toggle('on',!!ui.led);
+    var cls='good',txt='อ่านชีพจรได้',msg='สัญญาณชัด ค่านิ่งหลังผ่านไปสักครู่';
+    var ipt=S.idc;
+    if(!S.finger){cls='warn';txt='ไม่มีนิ้ว';msg='ยกนิ้วออก สัญญาณนิ่ง ไม่มีชีพจรให้จับ'}
+    else if(st.t<5){cls='wait';txt='รอสัญญาณนิ่ง';msg='ตัวเก็บประจุ 10µF กำลังชาร์จ รอประมาณ 5 วินาที'}
+    else if(ipt>520){cls='bad';txt='ตัวรับอิ่มตัว';msg='แสงสะท้อนแรงเกินไป โหนดตัวรับชนเพดาน ลดกระแส IR LED (เพิ่ม R220) หรือกดนิ้วเบาลง'}
+    else if(clip>0.15){cls='bad';txt='สัญญาณชนขอบ';msg='ขาออก LM358 ชน 0.05 V หรือ 3.5 V หมุน VR ลดความแรงลง'}
+    else if(pp<14){cls='warn';txt='สัญญาณเบาไป';msg='แกว่งน้อยกว่า ~14 count หมุน VR เพิ่ม หรือวางนิ้วให้นิ่งและกันแสงรอบข้าง'}
+    else if(st.bpm===0){cls='wait';txt='กำลังจับจังหวะ';msg='รอชีพจรอีกไม่กี่ครั้ง'}
+    var p=$('pill');p.className='pill '+cls;$('pillTxt').textContent=txt;$('msg').textContent=msg;
+    $('heart').style.animationDuration=(60/Math.max(40,(st.bpm||S.bpm)))+'s';
+    var now=performance.now();
+    if(now-lastUI>250){lastUI=now;meter()}
+  }
+  function meter(){
+    var ipt=S.finger?S.idc:2, vpt=Math.min(ipt*1e-6*RLOAD,4.7);
+    var rows=[['Vref (แถบ Vref)','2.50 V'],['โหนดตัวรับ NPT (เทียบ GND)',vpt.toFixed(2)+' V'],['ขา 3 LM358 (X, ก่อนชีพจร)','2.50 V'],
+      ['ขา 1 LM358 (OUT) ตอนนิ่ง','2.50 V (แกว่งตามชีพจร)'],['gain จริงที่ความถี่ชีพจร','×'+gain().toFixed(1)],
+      ['กระแส IR LED','≈ 16 mA (R220 + Q1)'],['ไฟ 5V บนแถบ','5.0 V']];
+    $('meter').innerHTML=rows.map(function(r){return '<tr><td>'+r[0]+'</td><td class="v">'+r[1]+'</td></tr>'}).join('');
+  }
+
+  // ---- loop
+  var last=performance.now(),acc=0;
+  function frame(now){
+    var el=Math.min(0.1,(now-last)/1000)*S.speed;last=now;
+    var n=Math.floor((el+acc)/DT);acc=(el+acc)-n*DT;
+    for(var i=0;i<n;i++){step();if(st.t-st.lastS>=SAMPLE){st.lastS=st.t;firmware()}}
+    render();requestAnimationFrame(frame);
+  }
+
+  // ---- controls
+  function sync(){
+    $('o_idc').textContent=S.idc+' µA'; $('o_mod').textContent=S.mod.toFixed(1)+' %'; $('o_bpm').textContent=S.bpm+' BPM';
+    $('o_vr').textContent=(S.vr).toFixed(0)+' kΩ'; $('o_noise').textContent=S.noise+' mV'; $('o_speed').textContent='×'+S.speed;
+    $('gainTxt').textContent='gain จริงที่ชีพจร ≈ ×'+gain().toFixed(1)+' (สูตร 1+VR÷2.4k ได้ ×'+(1+S.vr*1000/RG).toFixed(1)+' แต่ Vref ไม่ใช่กราวด์เป๊ะ จึงลดลง) · สุดซ้าย = ×1 แบน';
+    $('finger').textContent=S.finger?'วางนิ้วอยู่ 👆':'ยกนิ้วออกแล้ว ✋';$('finger').classList.toggle('on',S.finger);
+  }
+  ['idc','mod','bpm','vr','noise','speed'].forEach(function(k){var e=$(k);e.addEventListener('input',function(){S[k]=parseFloat(e.value);sync()})});
+  $('finger').addEventListener('click',function(){S.finger=!S.finger;sync()});
+  $('reset').addEventListener('click',function(){reset()});
+  var P={light:{idc:60,mod:1,vr:100},press:{idc:300,mod:.5,vr:60},sun:{idc:520,mod:.4,vr:100},weak:{idc:80,mod:.25,vr:100}};
+  document.querySelectorAll('[data-p]').forEach(function(b){b.addEventListener('click',function(){
+    var p=P[b.dataset.p];S.idc=p.idc;S.mod=p.mod;S.vr=p.vr;$('idc').value=p.idc;$('mod').value=p.mod;$('vr').value=p.vr;S.finger=true;sync();reset()})});
+  reset();sync();meter();requestAnimationFrame(frame);
+})();
+</script>
